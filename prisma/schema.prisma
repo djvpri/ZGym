@@ -1,0 +1,232 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── MEMBERS ────────────────────────────────────────────
+model Member {
+  id            String    @id @default(cuid())
+  memberNumber  String    @unique // e.g. GYM-00001
+  name          String
+  email         String?   @unique
+  phone         String?
+  address       String?
+  gender        String?   // male, female
+  dateOfBirth   DateTime?
+  joinDate      DateTime  @default(now())
+  expiryDate    DateTime? // when membership expires
+  status        String    @default("active") // active, inactive, suspended, expired
+  photo         String?   // URL or base64
+  emergencyContact String?
+  emergencyPhone   String?
+  notes         String?
+  
+  // Relations
+  memberships   Membership[]
+  attendances   Attendance[]
+  bookings      Booking[]
+  ptSessions    PtSession[]
+  payments      Payment[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+// ─── MEMBERSHIP PLANS ──────────────────────────────────
+model MembershipPlan {
+  id          String   @id @default(cuid())
+  name        String   // e.g. "Basic Monthly", "Premium Yearly"
+  description String?
+  duration    Int      // days (30 for monthly, 365 for yearly)
+  price       Decimal  @db.Decimal(12, 2)
+  isActive    Boolean  @default(true)
+  
+  memberships Membership[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// ─── MEMBERSHIP (active subscriptions) ─────────────────
+model Membership {
+  id          String   @id @default(cuid())
+  memberId    String
+  planId      String
+  startDate   DateTime @default(now())
+  endDate     DateTime
+  status      String   @default("active") // active, expired, cancelled
+  autoRenew   Boolean  @default(false)
+  
+  member      Member          @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  plan        MembershipPlan  @relation(fields: [planId], references: [id])
+  payments    Payment[]
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// ─── INSTRUCTORS ───────────────────────────────────────
+model Instructor {
+  id          String   @id @default(cuid())
+  name        String
+  email       String?  @unique
+  phone       String?
+  specialty   String?  // e.g. "Yoga", "Crossfit", "Cardio"
+  bio         String?
+  photo       String?
+  isActive    Boolean  @default(true)
+  hourlyRate  Decimal? @db.Decimal(10, 2)
+  
+  classes     GymClass[]
+  ptSessions  PtSession[]
+  schedules   Schedule[]
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// ─── CLASS SCHEDULE ────────────────────────────────────
+model GymClass {
+  id          String   @id @default(cuid())
+  name        String   // e.g. "Yoga Flow", "HIIT Blast"
+  description String?
+  instructorId String?
+  capacity    Int      @default(20)
+  duration    Int      // minutes
+  color       String?  // for calendar display
+  isActive    Boolean  @default(true)
+  
+  instructor  Instructor? @relation(fields: [instructorId], references: [id])
+  schedules   Schedule[]
+  bookings    Booking[]
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// ─── WEEKLY SCHEDULE ───────────────────────────────────
+model Schedule {
+  id          String   @id @default(cuid())
+  classId     String
+  instructorId String
+  dayOfWeek   Int      // 0=Sunday, 6=Saturday
+  startTime   String   // "08:00"
+  endTime     String   // "09:00"
+  isRecurring Boolean  @default(true)
+  
+  gymClass    GymClass   @relation(fields: [classId], references: [id], onDelete: Cascade)
+  instructor  Instructor @relation(fields: [instructorId], references: [id])
+  
+  createdAt   DateTime @default(now())
+}
+
+// ─── CLASS BOOKINGS ────────────────────────────────────
+model Booking {
+  id          String   @id @default(cuid())
+  memberId    String
+  classId     String
+  date        DateTime // specific date of the class
+  status      String   @default("booked") // booked, attended, cancelled, no_show
+  
+  member      Member    @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  gymClass    GymClass  @relation(fields: [classId], references: [id], onDelete: Cascade)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@unique([memberId, classId, date])
+}
+
+// ─── ATTENDANCE ────────────────────────────────────────
+model Attendance {
+  id          String   @id @default(cuid())
+  memberId    String
+  checkIn     DateTime @default(now())
+  checkOut    DateTime?
+  method      String   @default("manual") // manual, qr, fingerprint
+  
+  member      Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  
+  createdAt   DateTime @default(now())
+}
+
+// ─── PT SESSIONS ───────────────────────────────────────
+model PtSession {
+  id          String   @id @default(cuid())
+  memberId    String
+  instructorId String
+  date        DateTime
+  startTime   String   // "10:00"
+  endTime     String   // "11:00"
+  status      String   @default("scheduled") // scheduled, completed, cancelled
+  notes       String?
+  sessionType String   @default("regular") // regular, assessment, follow_up
+  
+  member      Member     @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  instructor  Instructor @relation(fields: [instructorId], references: [id])
+  payments    Payment[]
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// ─── PAYMENTS ──────────────────────────────────────────
+model Payment {
+  id          String   @id @default(cuid())
+  memberId    String
+  membershipId String?
+  ptSessionId String?
+  type        String   // membership, pt_session, product, other
+  description String
+  amount      Decimal  @db.Decimal(12, 2)
+  method      String   @default("cash") // cash, card, transfer, e_wallet
+  status      String   @default("paid") // paid, pending, cancelled, refunded
+  paidAt      DateTime @default(now())
+  notes       String?
+  
+  member      Member    @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  membership  Membership? @relation(fields: [membershipId], references: [id])
+  ptSession   PtSession?  @relation(fields: [ptSessionId], references: [id])
+  
+  createdAt   DateTime @default(now())
+}
+
+// ─── PRODUCTS (supplements, merch) ─────────────────────
+model Product {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  category    String?  // supplement, apparel, accessories
+  price       Decimal  @db.Decimal(10, 2)
+  stock       Int      @default(0)
+  isActive    Boolean  @default(true)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// ─── USERS (admin/staff) ──────────────────────────────
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      String   @default("staff") // admin, staff
+  isActive  Boolean  @default(true)
+  faceId    String?  @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ─── SETTINGS ──────────────────────────────────────────
+model Setting {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  value       String
+  group       String   @default("general") // general, billing, appearance
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
