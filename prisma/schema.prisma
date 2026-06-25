@@ -7,226 +7,301 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ─── TENANT (Gym/SaaS customer) ────────────────────────
+model Tenant {
+  id             String    @id @default(cuid())
+  name           String // Gym name
+  slug           String    @unique // URL-friendly
+  email          String // Owner email
+  phone          String?
+  address        String?
+  logo           String?
+  plan           String    @default("free") // free, basic, pro, enterprise
+  planExpires    DateTime?
+  isActive       Boolean   @default(true)
+  maxMembers     Int       @default(50)
+  maxInstructors Int       @default(3)
+  maxClasses     Int       @default(5)
+
+  users       User[]
+  members     Member[]
+  instructors Instructor[]
+  gymClasses  GymClass[]
+  products    Product[]
+  settings    Setting[]
+
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  MembershipPlan MembershipPlan[]
+  Membership     Membership[]
+  Schedule       Schedule[]
+  Booking        Booking[]
+  Attendance     Attendance[]
+  PtSession      PtSession[]
+  Payment        Payment[]
+}
+
 // ─── MEMBERS ────────────────────────────────────────────
 model Member {
-  id            String    @id @default(cuid())
-  memberNumber  String    @unique // e.g. GYM-00001
-  name          String
-  email         String?   @unique
-  phone         String?
-  address       String?
-  gender        String?   // male, female
-  dateOfBirth   DateTime?
-  joinDate      DateTime  @default(now())
-  expiryDate    DateTime? // when membership expires
-  status        String    @default("active") // active, inactive, suspended, expired
-  photo         String?   // URL or base64
+  id               String    @id @default(cuid())
+  tenantId         String
+  memberNumber     String // unique per tenant: GYM-00001
+  name             String
+  email            String?
+  phone            String?
+  address          String?
+  gender           String? // male, female
+  dateOfBirth      DateTime?
+  joinDate         DateTime  @default(now())
+  expiryDate       DateTime? // when membership expires
+  status           String    @default("active") // active, inactive, suspended, expired
+  photo            String? // URL or base64
   emergencyContact String?
   emergencyPhone   String?
-  notes         String?
-  
+  notes            String?
+
   // Relations
-  memberships   Membership[]
-  attendances   Attendance[]
-  bookings      Booking[]
-  ptSessions    PtSession[]
-  payments      Payment[]
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  tenant      Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  memberships Membership[]
+  attendances Attendance[]
+  bookings    Booking[]
+  ptSessions  PtSession[]
+  payments    Payment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([tenantId, memberNumber])
+  @@unique([tenantId, email])
 }
 
 // ─── MEMBERSHIP PLANS ──────────────────────────────────
 model MembershipPlan {
-  id          String   @id @default(cuid())
-  name        String   // e.g. "Basic Monthly", "Premium Yearly"
+  id          String  @id @default(cuid())
+  tenantId    String
+  name        String // e.g. "Basic Monthly", "Premium Yearly"
   description String?
-  duration    Int      // days (30 for monthly, 365 for yearly)
-  price       Decimal  @db.Decimal(12, 2)
-  isActive    Boolean  @default(true)
-  
+  duration    Int // days (30 for monthly, 365 for yearly)
+  price       Decimal @db.Decimal(12, 2)
+  isActive    Boolean @default(true)
+
+  tenant      Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   memberships Membership[]
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 // ─── MEMBERSHIP (active subscriptions) ─────────────────
 model Membership {
-  id          String   @id @default(cuid())
-  memberId    String
-  planId      String
-  startDate   DateTime @default(now())
-  endDate     DateTime
-  status      String   @default("active") // active, expired, cancelled
-  autoRenew   Boolean  @default(false)
-  
-  member      Member          @relation(fields: [memberId], references: [id], onDelete: Cascade)
-  plan        MembershipPlan  @relation(fields: [planId], references: [id])
-  payments    Payment[]
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(cuid())
+  tenantId  String
+  memberId  String
+  planId    String
+  startDate DateTime @default(now())
+  endDate   DateTime
+  status    String   @default("active") // active, expired, cancelled
+  autoRenew Boolean  @default(false)
+
+  tenant   Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  member   Member         @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  plan     MembershipPlan @relation(fields: [planId], references: [id])
+  payments Payment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 // ─── INSTRUCTORS ───────────────────────────────────────
 model Instructor {
-  id          String   @id @default(cuid())
-  name        String
-  email       String?  @unique
-  phone       String?
-  specialty   String?  // e.g. "Yoga", "Crossfit", "Cardio"
-  bio         String?
-  photo       String?
-  isActive    Boolean  @default(true)
-  hourlyRate  Decimal? @db.Decimal(10, 2)
-  
-  classes     GymClass[]
-  ptSessions  PtSession[]
-  schedules   Schedule[]
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id         String   @id @default(cuid())
+  tenantId   String
+  name       String
+  email      String?
+  phone      String?
+  specialty  String? // e.g. "Yoga", "Crossfit", "Cardio"
+  bio        String?
+  photo      String?
+  isActive   Boolean  @default(true)
+  hourlyRate Decimal? @db.Decimal(10, 2)
+
+  tenant     Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  classes    GymClass[]
+  ptSessions PtSession[]
+  schedules  Schedule[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([tenantId, email])
 }
 
 // ─── CLASS SCHEDULE ────────────────────────────────────
 model GymClass {
-  id          String   @id @default(cuid())
-  name        String   // e.g. "Yoga Flow", "HIIT Blast"
-  description String?
+  id           String  @id @default(cuid())
+  tenantId     String
+  name         String // e.g. "Yoga Flow", "HIIT Blast"
+  description  String?
   instructorId String?
-  capacity    Int      @default(20)
-  duration    Int      // minutes
-  color       String?  // for calendar display
-  isActive    Boolean  @default(true)
-  
-  instructor  Instructor? @relation(fields: [instructorId], references: [id])
-  schedules   Schedule[]
-  bookings    Booking[]
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  capacity     Int     @default(20)
+  duration     Int // minutes
+  color        String? // for calendar display
+  isActive     Boolean @default(true)
+
+  tenant     Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  instructor Instructor? @relation(fields: [instructorId], references: [id])
+  schedules  Schedule[]
+  bookings   Booking[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 // ─── WEEKLY SCHEDULE ───────────────────────────────────
 model Schedule {
-  id          String   @id @default(cuid())
-  classId     String
+  id           String  @id @default(cuid())
+  tenantId     String
+  classId      String
   instructorId String
-  dayOfWeek   Int      // 0=Sunday, 6=Saturday
-  startTime   String   // "08:00"
-  endTime     String   // "09:00"
-  isRecurring Boolean  @default(true)
-  
-  gymClass    GymClass   @relation(fields: [classId], references: [id], onDelete: Cascade)
-  instructor  Instructor @relation(fields: [instructorId], references: [id])
-  
-  createdAt   DateTime @default(now())
+  dayOfWeek    Int // 0=Sunday, 6=Saturday
+  startTime    String // "08:00"
+  endTime      String // "09:00"
+  isRecurring  Boolean @default(true)
+
+  tenant     Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  gymClass   GymClass   @relation(fields: [classId], references: [id], onDelete: Cascade)
+  instructor Instructor @relation(fields: [instructorId], references: [id])
+
+  createdAt DateTime @default(now())
 }
 
 // ─── CLASS BOOKINGS ────────────────────────────────────
 model Booking {
-  id          String   @id @default(cuid())
-  memberId    String
-  classId     String
-  date        DateTime // specific date of the class
-  status      String   @default("booked") // booked, attended, cancelled, no_show
-  
-  member      Member    @relation(fields: [memberId], references: [id], onDelete: Cascade)
-  gymClass    GymClass  @relation(fields: [classId], references: [id], onDelete: Cascade)
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
-  @@unique([memberId, classId, date])
+  id       String   @id @default(cuid())
+  tenantId String
+  memberId String
+  classId  String
+  date     DateTime // specific date of the class
+  status   String   @default("booked") // booked, attended, cancelled, no_show
+
+  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  member   Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  gymClass GymClass @relation(fields: [classId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([tenantId, memberId, classId, date])
 }
 
 // ─── ATTENDANCE ────────────────────────────────────────
 model Attendance {
-  id          String   @id @default(cuid())
-  memberId    String
-  checkIn     DateTime @default(now())
-  checkOut    DateTime?
-  method      String   @default("manual") // manual, qr, fingerprint
-  
-  member      Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
-  
-  createdAt   DateTime @default(now())
+  id       String    @id @default(cuid())
+  tenantId String
+  memberId String
+  checkIn  DateTime  @default(now())
+  checkOut DateTime?
+  method   String    @default("manual") // manual, qr, fingerprint
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  member Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
 }
 
 // ─── PT SESSIONS ───────────────────────────────────────
 model PtSession {
-  id          String   @id @default(cuid())
-  memberId    String
+  id           String   @id @default(cuid())
+  tenantId     String
+  memberId     String
   instructorId String
-  date        DateTime
-  startTime   String   // "10:00"
-  endTime     String   // "11:00"
-  status      String   @default("scheduled") // scheduled, completed, cancelled
-  notes       String?
-  sessionType String   @default("regular") // regular, assessment, follow_up
-  
-  member      Member     @relation(fields: [memberId], references: [id], onDelete: Cascade)
-  instructor  Instructor @relation(fields: [instructorId], references: [id])
-  payments    Payment[]
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  date         DateTime
+  startTime    String // "10:00"
+  endTime      String // "11:00"
+  status       String   @default("scheduled") // scheduled, completed, cancelled
+  notes        String?
+  sessionType  String   @default("regular") // regular, assessment, follow_up
+
+  tenant     Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  member     Member     @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  instructor Instructor @relation(fields: [instructorId], references: [id])
+  payments   Payment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 // ─── PAYMENTS ──────────────────────────────────────────
 model Payment {
-  id          String   @id @default(cuid())
-  memberId    String
+  id           String   @id @default(cuid())
+  tenantId     String
+  memberId     String
   membershipId String?
-  ptSessionId String?
-  type        String   // membership, pt_session, product, other
-  description String
-  amount      Decimal  @db.Decimal(12, 2)
-  method      String   @default("cash") // cash, card, transfer, e_wallet
-  status      String   @default("paid") // paid, pending, cancelled, refunded
-  paidAt      DateTime @default(now())
-  notes       String?
-  
-  member      Member    @relation(fields: [memberId], references: [id], onDelete: Cascade)
-  membership  Membership? @relation(fields: [membershipId], references: [id])
-  ptSession   PtSession?  @relation(fields: [ptSessionId], references: [id])
-  
-  createdAt   DateTime @default(now())
+  ptSessionId  String?
+  type         String // membership, pt_session, product, other
+  description  String
+  amount       Decimal  @db.Decimal(12, 2)
+  method       String   @default("cash") // cash, card, transfer, e_wallet
+  status       String   @default("paid") // paid, pending, cancelled, refunded
+  paidAt       DateTime @default(now())
+  notes        String?
+
+  tenant     Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  member     Member      @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  membership Membership? @relation(fields: [membershipId], references: [id])
+  ptSession  PtSession?  @relation(fields: [ptSessionId], references: [id])
+
+  createdAt DateTime @default(now())
 }
 
 // ─── PRODUCTS (supplements, merch) ─────────────────────
 model Product {
-  id          String   @id @default(cuid())
+  id          String  @id @default(cuid())
+  tenantId    String
   name        String
   description String?
-  category    String?  // supplement, apparel, accessories
-  price       Decimal  @db.Decimal(10, 2)
-  stock       Int      @default(0)
-  isActive    Boolean  @default(true)
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  category    String? // supplement, apparel, accessories
+  price       Decimal @db.Decimal(10, 2)
+  stock       Int     @default(0)
+  isActive    Boolean @default(true)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 // ─── USERS (admin/staff) ──────────────────────────────
 model User {
   id        String   @id @default(cuid())
+  tenantId  String
   name      String
-  email     String   @unique
+  email     String // NOT unique globally, unique per tenant
   password  String
-  role      String   @default("staff") // admin, staff
+  role      String   @default("staff") // owner, admin, staff, superadmin
   isActive  Boolean  @default(true)
-  faceId    String?  @unique
+  faceId    String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, email])
+  @@unique([tenantId, faceId])
 }
 
 // ─── SETTINGS ──────────────────────────────────────────
 model Setting {
-  id          String   @id @default(cuid())
-  key         String   @unique
-  value       String
-  group       String   @default("general") // general, billing, appearance
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id       String @id @default(cuid())
+  tenantId String
+  key      String
+  value    String
+  group    String @default("general") // general, billing, appearance
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([tenantId, key])
 }

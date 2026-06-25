@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState } from 'react'
-import { signOut } from 'next-auth/react'
+import { signOut, useSession } from 'next-auth/react'
 
 const menuItems = [
   { href: '/dashboard', label: 'Dashboard', icon: '📊' },
@@ -17,9 +17,18 @@ const menuItems = [
   { href: '/settings', label: 'Pengaturan', icon: '⚙️' },
 ]
 
+const PLAN_BADGES: Record<string, string> = {
+  free: 'bg-gray-100 text-gray-600',
+  basic: 'bg-blue-100 text-blue-700',
+  pro: 'bg-purple-100 text-purple-700',
+  enterprise: 'bg-amber-100 text-amber-700',
+}
+
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const { data: session } = useSession()
+  const user = session?.user as any
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
@@ -32,7 +41,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <aside className={`fixed lg:static inset-y-0 left-0 z-50 w-64 bg-slate-800 text-white transform transition-transform lg:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="p-6">
           <h1 className="text-2xl font-bold">🏋️ ZGym</h1>
-          <p className="text-slate-400 text-sm mt-1">Gym Management</p>
+          {user?.tenantName && (
+            <div className="mt-2">
+              <p className="text-white font-medium text-sm">{user.tenantName}</p>
+              <span className={`inline-block mt-1 text-xs px-2 py-0.5 rounded-full font-medium ${PLAN_BADGES[user.tenantPlan] || PLAN_BADGES.free}`}>
+                {user.tenantPlan?.toUpperCase() || 'FREE'}
+              </span>
+            </div>
+          )}
         </div>
         <nav className="px-4 space-y-1">
           {menuItems.map((item) => (

@@ -1,13 +1,15 @@
 export const dynamic = "force-dynamic"
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { requireTenant } from '@/lib/tenant'
 
 export async function GET(req: NextRequest) {
+  const tenantId = await requireTenant()
   const { searchParams } = new URL(req.url)
   const type = searchParams.get('type') || ''
   const memberId = searchParams.get('memberId') || ''
 
-  const where: any = {}
+  const where: any = { tenantId }
   if (type) where.type = type
   if (memberId) where.memberId = memberId
 
@@ -21,9 +23,11 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const tenantId = await requireTenant()
   const body = await req.json()
   const payment = await prisma.payment.create({
     data: {
+      tenantId,
       memberId: body.memberId,
       membershipId: body.membershipId || null,
       ptSessionId: body.ptSessionId || null,

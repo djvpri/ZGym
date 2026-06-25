@@ -1,13 +1,15 @@
 export const dynamic = "force-dynamic"
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { requireTenant } from '@/lib/tenant'
 
 export async function GET(req: NextRequest) {
+  const tenantId = await requireTenant()
   const { searchParams } = new URL(req.url)
   const search = searchParams.get('search') || ''
   const status = searchParams.get('status') || ''
 
-  const where: any = {}
+  const where: any = { tenantId }
   if (search) {
     where.OR = [
       { name: { contains: search, mode: 'insensitive' } },
@@ -28,10 +30,12 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const tenantId = await requireTenant()
   const body = await req.json()
 
-  // Auto-generate member number
+  // Auto-generate member number (per tenant)
   const lastMember = await prisma.member.findFirst({
+    where: { tenantId },
     orderBy: { memberNumber: 'desc' },
   })
   const nextNum = lastMember
@@ -41,6 +45,7 @@ export async function POST(req: NextRequest) {
 
   const member = await prisma.member.create({
     data: {
+      tenantId,
       memberNumber,
       name: body.name,
       email: body.email || null,

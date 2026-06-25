@@ -1,10 +1,12 @@
 export const dynamic = "force-dynamic"
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { requireTenant } from '@/lib/tenant'
 
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
-  const member = await prisma.member.findUnique({
-    where: { id: params.id },
+  const tenantId = await requireTenant()
+  const member = await prisma.member.findFirst({
+    where: { id: params.id, tenantId },
     include: {
       memberships: { include: { plan: true }, orderBy: { startDate: 'desc' } },
       attendances: { orderBy: { checkIn: 'desc' }, take: 20 },
@@ -17,6 +19,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 }
 
 export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+  const tenantId = await requireTenant()
   const body = await req.json()
   const member = await prisma.member.update({
     where: { id: params.id },
@@ -37,6 +40,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+  const tenantId = await requireTenant()
   await prisma.member.delete({ where: { id: params.id } })
   return NextResponse.json({ success: true })
 }

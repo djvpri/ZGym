@@ -2,7 +2,8 @@
 
 import { useState } from 'react'
 import { signIn } from 'next-auth/react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
+import Link from 'next/link'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -10,6 +11,8 @@ export default function LoginPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const registered = searchParams.get('registered')
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -37,6 +40,12 @@ export default function LoginPage() {
           <h1 className="text-3xl font-bold text-gray-800">🏋️ ZGym</h1>
           <p className="text-gray-500 mt-2">Gym Management System</p>
         </div>
+
+        {registered && (
+          <div className="bg-green-50 text-green-600 p-3 rounded-lg mb-4 text-sm">
+            Registrasi berhasil! Silakan masuk.
+          </div>
+        )}
 
         {error && (
           <div className="bg-red-50 text-red-600 p-3 rounded-lg mb-4 text-sm">
@@ -75,6 +84,13 @@ export default function LoginPage() {
             {loading ? 'Masuk...' : 'Masuk'}
           </button>
         </form>
+
+        <p className="text-center text-sm text-gray-500 mt-6">
+          Belum punya akun?{' '}
+          <Link href="/register" className="text-blue-600 hover:underline font-medium">
+            Daftar Sekarang
+          </Link>
+        </p>
       </div>
     </div>
   )

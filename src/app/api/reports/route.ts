@@ -1,38 +1,43 @@
 export const dynamic = "force-dynamic"
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { requireTenant } from '@/lib/tenant'
 
 export async function GET(req: NextRequest) {
+  const tenantId = await requireTenant()
   const now = new Date()
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
   const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0)
   const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
   const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0)
 
+  const tenantFilter = { tenantId }
+
   // Revenue this month
   const revenueThisMonth = await prisma.payment.aggregate({
-    where: { paidAt: { gte: startOfMonth, lte: endOfMonth }, status: 'paid' },
+    where: { ...tenantFilter, paidAt: { gte: startOfMonth, lte: endOfMonth }, status: 'paid' },
     _sum: { amount: true },
     _count: true,
   })
 
   // Revenue last month
   const revenueLastMonth = await prisma.payment.aggregate({
-    where: { paidAt: { gte: startOfLastMonth, lte: endOfLastMonth }, status: 'paid' },
+    where: { ...tenantFilter, paidAt: { gte: startOfLastMonth, lte: endOfLastMonth }, status: 'paid' },
     _sum: { amount: true },
   })
 
   // Total members
-  const totalMembers = await prisma.member.count()
-  const activeMembers = await prisma.member.count({ where: { status: 'active' } })
+  const totalMembers = await prisma.member.count({ where: tenantFilter })
+  const activeMembers = await prisma.member.count({ where: { ...tenantFilter, status: 'active' } })
 
   // Attendance this month
   const attendanceThisMonth = await prisma.attendance.count({
-    where: { checkIn: { gte: startOfMonth, lte: endOfMonth } },
+    where: { ...tenantFilter, checkIn: { gte: startOfMonth, lte: endOfMonth } },
   })
 
   // Popular classes
   const popularClasses = await prisma.gymClass.findMany({
+    where: tenantFilter,
     include: {
       _count: { select: { bookings: true } },
       instructor: true,
@@ -44,7 +49,7 @@ export async function GET(req: NextRequest) {
   // Payment by type
   const paymentsByType = await prisma.payment.groupBy({
     by: ['type'],
-    where: { paidAt: { gte: startOfMonth, lte: endOfMonth }, status: 'paid' },
+    where: { ...tenantFilter, paidAt: { gte: startOfMonth, lte: endOfMonth }, status: 'paid' },
     _sum: { amount: true },
     _count: true,
   })
@@ -58,7 +63,7 @@ export async function GET(req: NextRequest) {
     const nextDate = new Date(date)
     nextDate.setDate(nextDate.getDate() + 1)
     const count = await prisma.attendance.count({
-      where: { checkIn: { gte: date, lt: nextDate } },
+      where: { ...tenantFilter, checkIn: { gte: date, lt: nextDate } },
     })
     attendanceTrend.push({
       date: date.toISOString().split('T')[0],

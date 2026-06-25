@@ -1,15 +1,17 @@
 export const dynamic = "force-dynamic"
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { requireTenant } from '@/lib/tenant'
 
 export async function GET() {
+  const tenantId = await requireTenant()
   const today = new Date()
   today.setHours(0, 0, 0, 0)
   const tomorrow = new Date(today)
   tomorrow.setDate(tomorrow.getDate() + 1)
 
   const attendances = await prisma.attendance.findMany({
-    where: { checkIn: { gte: today, lt: tomorrow } },
+    where: { tenantId, checkIn: { gte: today, lt: tomorrow } },
     include: { member: true },
     orderBy: { checkIn: 'desc' },
   })
@@ -17,11 +19,13 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  const tenantId = await requireTenant()
   const body = await req.json()
 
   if (body.action === 'checkin') {
     const existing = await prisma.attendance.findFirst({
       where: {
+        tenantId,
         memberId: body.memberId,
         checkIn: {
           gte: new Date(new Date().setHours(0, 0, 0, 0)),
@@ -33,6 +37,7 @@ export async function POST(req: NextRequest) {
 
     const attendance = await prisma.attendance.create({
       data: {
+        tenantId,
         memberId: body.memberId,
         method: body.method || 'manual',
       },

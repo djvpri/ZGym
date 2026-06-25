@@ -1,9 +1,12 @@
 export const dynamic = "force-dynamic"
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { requireTenant } from '@/lib/tenant'
 
 export async function GET() {
+  const tenantId = await requireTenant()
   const sessions = await prisma.ptSession.findMany({
+    where: { tenantId },
     include: { member: true, instructor: true },
     orderBy: { date: 'desc' },
     take: 100,
@@ -12,9 +15,11 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  const tenantId = await requireTenant()
   const body = await req.json()
   const session = await prisma.ptSession.create({
     data: {
+      tenantId,
       memberId: body.memberId,
       instructorId: body.instructorId,
       date: new Date(body.date),
@@ -29,6 +34,7 @@ export async function POST(req: NextRequest) {
 }
 
 export async function PUT(req: NextRequest) {
+  const tenantId = await requireTenant()
   const body = await req.json()
   const session = await prisma.ptSession.update({
     where: { id: body.id },

@@ -1,16 +1,23 @@
 export const dynamic = "force-dynamic"
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { requireTenant } from '@/lib/tenant'
 
 export async function GET() {
-  const plans = await prisma.membershipPlan.findMany({ orderBy: { price: 'asc' } })
+  const tenantId = await requireTenant()
+  const plans = await prisma.membershipPlan.findMany({
+    where: { tenantId },
+    orderBy: { price: 'asc' },
+  })
   return NextResponse.json(plans)
 }
 
 export async function POST(req: NextRequest) {
+  const tenantId = await requireTenant()
   const body = await req.json()
   const plan = await prisma.membershipPlan.create({
     data: {
+      tenantId,
       name: body.name,
       description: body.description || null,
       duration: body.duration,
@@ -21,6 +28,7 @@ export async function POST(req: NextRequest) {
 }
 
 export async function PUT(req: NextRequest) {
+  const tenantId = await requireTenant()
   const body = await req.json()
   const plan = await prisma.membershipPlan.update({
     where: { id: body.id },

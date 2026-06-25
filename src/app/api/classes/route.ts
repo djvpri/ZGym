@@ -1,9 +1,12 @@
 export const dynamic = "force-dynamic"
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { requireTenant } from '@/lib/tenant'
 
 export async function GET() {
+  const tenantId = await requireTenant()
   const classes = await prisma.gymClass.findMany({
+    where: { tenantId },
     include: { instructor: true, _count: { select: { bookings: true } } },
     orderBy: { name: 'asc' },
   })
@@ -11,9 +14,11 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  const tenantId = await requireTenant()
   const body = await req.json()
   const gymClass = await prisma.gymClass.create({
     data: {
+      tenantId,
       name: body.name,
       description: body.description || null,
       instructorId: body.instructorId || null,
@@ -26,6 +31,7 @@ export async function POST(req: NextRequest) {
 }
 
 export async function PUT(req: NextRequest) {
+  const tenantId = await requireTenant()
   const body = await req.json()
   const gymClass = await prisma.gymClass.update({
     where: { id: body.id },
@@ -43,6 +49,7 @@ export async function PUT(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
+  const tenantId = await requireTenant()
   const { id } = await req.json()
   await prisma.gymClass.delete({ where: { id } })
   return NextResponse.json({ success: true })
