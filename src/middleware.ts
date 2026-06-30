@@ -22,12 +22,12 @@ export function middleware(request: NextRequest) {
   // For admin/* routes, check session (superadmin check happens server-side)
   // For all other protected routes, check session
   // NextAuth v5 (Auth.js) memakai cookie `authjs.session-token`
-  // (`__Secure-` prefix di HTTPS). Nama `next-auth.*` lama dipertahankan
-  // untuk kompatibilitas saat transisi.
-  const sessionToken = request.cookies.get('authjs.session-token')?.value
-    || request.cookies.get('__Secure-authjs.session-token')?.value
-    || request.cookies.get('next-auth.session-token')?.value
-    || request.cookies.get('__Secure-next-auth.session-token')?.value
+  // (`__Secure-` prefix di HTTPS). Saat payload besar, cookie dipecah jadi
+  // `...session-token.0`, `.1`, dst — jadi cocokkan via substring, bukan exact,
+  // dan dukung juga nama v4 `next-auth.*` untuk transisi.
+  const sessionToken = request.cookies.getAll().find(
+    (c) => c.name.includes('authjs.session-token') || c.name.includes('next-auth.session-token')
+  )?.value
 
   if (!sessionToken) {
     if (path.startsWith('/admin')) {

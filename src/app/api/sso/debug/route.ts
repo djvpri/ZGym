@@ -18,6 +18,7 @@ export async function GET(req: NextRequest) {
     },
     server_now_unix: now,
     token_diberikan: !!token,
+    cookies_masuk: req.cookies.getAll().map((c) => c.name),
   }
 
   if (!token) return NextResponse.json(out)
