@@ -89,9 +89,20 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ success: true })
       }
       case 'deleteTenant': {
+        // Soft-delete: nonaktifkan tenant + semua usernya, BUKAN hapus baris.
+        // Relasi tenant pakai onDelete: Cascade, jadi hard-delete akan
+        // menghapus SELURUH data tenant. Tombol di ZOne ("Nonaktifkan") juga
+        // menawarkan aktifkan ulang, jadi harus reversible.
         if (!data?.tenantId) return NextResponse.json({ error: 'tenantId wajib' }, { status: 400 })
-        await prisma.tenant.delete({ where: { id: data.tenantId } })
-        return NextResponse.json({ success: true })
+        await prisma.tenant.update({ where: { id: data.tenantId }, data: { isActive: false } })
+        await prisma.user.updateMany({ where: { tenantId: data.tenantId }, data: { isActive: false } })
+        return NextResponse.json({ success: true, deactivated: true })
+      }
+      case 'reactivateTenant': {
+        if (!data?.tenantId) return NextResponse.json({ error: 'tenantId wajib' }, { status: 400 })
+        await prisma.tenant.update({ where: { id: data.tenantId }, data: { isActive: true } })
+        await prisma.user.updateMany({ where: { tenantId: data.tenantId }, data: { isActive: true } })
+        return NextResponse.json({ success: true, reactivated: true })
       }
       case 'updatePlan': {
         if (!data?.tenantId || !data?.plan) return NextResponse.json({ error: 'tenantId & plan wajib' }, { status: 400 })
@@ -160,8 +171,14 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ success: true })
           }
           case 'delete':
-            await prisma.user.delete({ where: { id: user.id } })
-            return NextResponse.json({ success: true })
+            // Soft-delete: nonaktifkan akun (reversible via 'reactivate'),
+            // BUKAN hapus baris. Hard-delete cascade ke data terkait & bikin
+            // tombol "Aktifkan" di ZOne tak ada gunanya.
+            await prisma.user.update({ where: { id: user.id }, data: { isActive: false } })
+            return NextResponse.json({ success: true, deactivated: true })
+          case 'reactivate':
+            await prisma.user.update({ where: { id: user.id }, data: { isActive: true } })
+            return NextResponse.json({ success: true, reactivated: true })
           default:
             return NextResponse.json({ error: 'Unknown action' }, { status: 400 })
         }
