@@ -21,7 +21,12 @@ export function middleware(request: NextRequest) {
 
   // For admin/* routes, check session (superadmin check happens server-side)
   // For all other protected routes, check session
-  const sessionToken = request.cookies.get('next-auth.session-token')?.value
+  // NextAuth v5 (Auth.js) memakai cookie `authjs.session-token`
+  // (`__Secure-` prefix di HTTPS). Nama `next-auth.*` lama dipertahankan
+  // untuk kompatibilitas saat transisi.
+  const sessionToken = request.cookies.get('authjs.session-token')?.value
+    || request.cookies.get('__Secure-authjs.session-token')?.value
+    || request.cookies.get('next-auth.session-token')?.value
     || request.cookies.get('__Secure-next-auth.session-token')?.value
 
   if (!sessionToken) {
