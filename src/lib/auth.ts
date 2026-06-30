@@ -24,9 +24,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         // CROSS_APP_SECRET, tanpa password. Token diterbitkan /api/sso/zgym di hub.
         if ((credentials as any)?.ssoToken) {
           try {
+            // clockTolerance: jam antar-server bisa selisih puluhan detik
+            // (skew). Tanpa ini, token SSO 60 detik dari ZOne bisa langsung
+            // dianggap kedaluwarsa di ZGym → TokenExpiredError → login gagal.
             const payload = jwt.verify(
               (credentials as any).ssoToken as string,
-              process.env.CROSS_APP_SECRET || 'z-ecosystem-admin-2026'
+              process.env.CROSS_APP_SECRET || 'z-ecosystem-admin-2026',
+              { clockTolerance: 300 }
             ) as any
             if (payload.app !== 'zgym') { console.error('[SSO] app mismatch:', payload.app); return null }
             const email = String(payload.email || '').trim().toLowerCase()
