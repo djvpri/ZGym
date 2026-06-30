@@ -5,6 +5,12 @@ import jwt from 'jsonwebtoken'
 import { prisma } from './prisma'
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
+  // NextAuth v5 baca secret dari AUTH_SECRET; deployment ini masih pakai
+  // NEXTAUTH_SECRET (nama v4), jadi fallback eksplisit. trustHost wajib true
+  // untuk self-hosted (Railway/VPS) yang bukan Vercel, kalau tidak v5 lempar
+  // UntrustedHost → 500.
+  trustHost: true,
+  secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET,
   providers: [
     CredentialsProvider({
       name: 'credentials',
