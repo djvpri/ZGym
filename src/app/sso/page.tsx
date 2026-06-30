@@ -44,11 +44,6 @@ function SsoContent() {
             <div className="text-4xl mb-4">❌</div>
             <p className="text-red-400 font-medium mb-2">Gagal Login</p>
             <p className="text-slate-500 text-sm mb-4">{msg}</p>
-            {token && (
-              <a href={`/api/sso/debug?token=${encodeURIComponent(token)}`} className="block text-amber-400 text-sm underline mb-3">
-                🔍 Lihat detail debug
-              </a>
-            )}
             <a href="https://zone.zomet.my.id" className="text-blue-400 text-sm underline">Kembali ke Z One</a>
           </>
         )}

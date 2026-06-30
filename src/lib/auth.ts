@@ -32,20 +32,16 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
               process.env.CROSS_APP_SECRET || 'z-ecosystem-admin-2026',
               { clockTolerance: 300 }
             ) as any
-            if (payload.app !== 'zgym') { console.error('[SSO] app mismatch:', payload.app); return null }
+            if (payload.app !== 'zgym') return null
             const email = String(payload.email || '').trim().toLowerCase()
             const user = await prisma.user.findFirst({
               where: { email, isActive: true },
               include: { tenant: true },
             })
-            if (!user) { console.error('[SSO] user tidak ditemukan/nonaktif:', email); return null }
-            if (user.role !== 'superadmin' && (!user.tenant || !user.tenant.isActive)) {
-              console.error('[SSO] tenant null/nonaktif utk:', email, '| role:', user.role, '| tenantActive:', user.tenant?.isActive)
-              return null
-            }
+            if (!user) return null
+            if (user.role !== 'superadmin' && (!user.tenant || !user.tenant.isActive)) return null
             return { id: user.id, email: user.email, name: user.name }
-          } catch (e) {
-            console.error('[SSO] verify gagal:', (e as Error)?.name, (e as Error)?.message)
+          } catch {
             return null
           }
         }
