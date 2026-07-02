@@ -3,15 +3,12 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
 
-// Migration 2026-07-02: Dual secret support during transition
-const NEW_SECRET = process.env.CROSS_APP_SECRET || 'uurclTHL375CiZeWi2g4T3GczU2YNY9I1wzjlsVTgSk'
-const OLD_SECRET = 'z-ecosystem-admin-2026'
-const VALID_SECRETS = [NEW_SECRET, OLD_SECRET]
+import { getCrossAppSecret } from '@/lib/secrets'
 
 function checkAuth(req: NextRequest) {
   const auth = req.headers.get('authorization')
   const token = auth?.replace('Bearer ', '')
-  return token ? VALID_SECRETS.includes(token) : false
+  return token === getCrossAppSecret()
 }
 
 export async function GET(req: NextRequest) {

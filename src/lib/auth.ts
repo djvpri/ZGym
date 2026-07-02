@@ -2,6 +2,7 @@ import NextAuth from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
+import { getCrossAppSecret } from './secrets'
 import { prisma } from './prisma'
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
@@ -29,7 +30,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             // dianggap kedaluwarsa di ZGym → TokenExpiredError → login gagal.
             const payload = jwt.verify(
               (credentials as any).ssoToken as string,
-              process.env.CROSS_APP_SECRET || 'z-ecosystem-admin-2026',
+              getCrossAppSecret(),
               { clockTolerance: 300 }
             ) as any
             if (payload.app !== 'zgym') return null
