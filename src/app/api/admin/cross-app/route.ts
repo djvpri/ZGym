@@ -44,8 +44,21 @@ export async function POST(req: NextRequest) {
     if (action === 'createTenant') {
       const name = String(data?.name || '').trim()
       if (!name) return NextResponse.json({ error: 'name wajib diisi' }, { status: 400 })
-      const tenant = await prisma.tenant.create({ data: { name, plan: data?.plan || 'free' } })
-      return NextResponse.json({ success: true, tenant }, { status: 201 })
+      const ownerEmail = String(email || data?.email || '').trim().toLowerCase()
+      if (!ownerEmail) return NextResponse.json({ error: 'email wajib diisi' }, { status: 400 })
+      // slug wajib & unik: turunkan dari nama, tambah suffix acak kalau bentrok
+      const base = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) || 'tenant'
+      let slug = base
+      for (let i = 0; i < 5; i++) {
+        try {
+          const tenant = await prisma.tenant.create({ data: { name, slug, email: ownerEmail, plan: data?.plan || 'free' } })
+          return NextResponse.json({ success: true, tenant }, { status: 201 })
+        } catch (e: any) {
+          if (e?.code === 'P2002') { slug = `${base}-${Math.floor(Math.random() * 9999)}`; continue }
+          throw e
+        }
+      }
+      return NextResponse.json({ error: 'Gagal membuat tenant (slug bentrok)' }, { status: 500 })
     }
 
     if (action === 'updateTenant') {
