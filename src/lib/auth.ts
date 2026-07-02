@@ -1,17 +1,51 @@
 import NextAuth from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import bcrypt from 'bcryptjs'
+import jwt from 'jsonwebtoken'
 import { prisma } from './prisma'
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
+  // NextAuth v5 baca secret dari AUTH_SECRET; deployment ini masih pakai
+  // NEXTAUTH_SECRET (nama v4), jadi fallback eksplisit. trustHost wajib true
+  // untuk self-hosted (Railway/VPS) yang bukan Vercel, kalau tidak v5 lempar
+  // UntrustedHost → 500.
+  trustHost: true,
+  secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET,
   providers: [
     CredentialsProvider({
       name: 'credentials',
       credentials: {
         email: { label: 'Email', type: 'email' },
         password: { label: 'Password', type: 'password' },
+        ssoToken: { label: 'SSO Token', type: 'text' },
       },
       async authorize(credentials) {
+        // SSO dari Z One (hub): login pakai token JWT bertanda tangan
+        // CROSS_APP_SECRET, tanpa password. Token diterbitkan /api/sso/zgym di hub.
+        if ((credentials as any)?.ssoToken) {
+          try {
+            // clockTolerance: jam antar-server bisa selisih puluhan detik
+            // (skew). Tanpa ini, token SSO 60 detik dari ZOne bisa langsung
+            // dianggap kedaluwarsa di ZGym → TokenExpiredError → login gagal.
+            const payload = jwt.verify(
+              (credentials as any).ssoToken as string,
+              process.env.CROSS_APP_SECRET || 'z-ecosystem-admin-2026',
+              { clockTolerance: 300 }
+            ) as any
+            if (payload.app !== 'zgym') return null
+            const email = String(payload.email || '').trim().toLowerCase()
+            const user = await prisma.user.findFirst({
+              where: { email, isActive: true },
+              include: { tenant: true },
+            })
+            if (!user) return null
+            if (user.role !== 'superadmin' && (!user.tenant || !user.tenant.isActive)) return null
+            return { id: user.id, email: user.email, name: user.name }
+          } catch {
+            return null
+          }
+        }
+
         if (!credentials?.email || !credentials?.password) return null
 
         const user = await prisma.user.findFirst({
