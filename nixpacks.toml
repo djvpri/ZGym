@@ -1,0 +1,8 @@
+[phases.setup]
+nixPkgs = ["nodejs_20"]
+
+[phases.install]
+cmds = ["npm install --legacy-peer-deps"]
+
+[phases.build]
+cmds = ["DATABASE_URL='postgresql://dummy:dummy@localhost/dummy' npx prisma generate", "npm run build"]
