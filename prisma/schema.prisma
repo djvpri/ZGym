@@ -22,6 +22,8 @@ model Tenant {
   maxMembers     Int       @default(50)
   maxInstructors Int       @default(3)
   maxClasses     Int       @default(5)
+  isDemo         Boolean   @default(false)
+  demoExpiresAt  DateTime?
 
   users       User[]
   members     Member[]
