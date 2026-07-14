@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
 
 function formatRp(n: number) {
@@ -16,14 +16,44 @@ const PLAN_BADGES: Record<string, string> = {
 
 export default function DashboardPage() {
   const [data, setData] = useState<any>(null)
+  const [isDemo, setIsDemo] = useState(false)
+  const [resetting, setResetting] = useState(false)
   const { data: session } = useSession()
   const user = session?.user as any
 
-  useEffect(() => {
+  const loadData = useCallback(() => {
     fetch('/api/reports').then(r => r.json()).then(setData)
   }, [])
 
-  if (!data) return <div className="animate-pulse space-y-6"><div className="h-32 bg-gray-200 rounded-xl" /><div className="grid grid-cols-1 md:grid-cols-4 gap-4">{[...Array(4)].map((_,i)=><div key={i} className="h-24 bg-gray-200 rounded-xl"/>)}</div></div>
+  useEffect(() => { loadData() }, [loadData])
+
+  useEffect(() => {
+    fetch('/api/demo/reset')
+      .then(r => r.json())
+      .then(d => setIsDemo(!!d.isDemo))
+      .catch(() => {})
+  }, [])
+
+  async function handleResetDemo() {
+    if (!confirm('Reset semua data demo ke kondisi awal?')) return
+    setResetting(true)
+    try {
+      await fetch('/api/demo/reset', { method: 'POST' })
+      loadData()
+    } finally {
+      setResetting(false)
+    }
+  }
+
+  if (!data) return (
+    <div className="animate-pulse space-y-6">
+      <div className="h-16 bg-gray-200 rounded-xl" />
+      <div className="h-32 bg-gray-200 rounded-xl" />
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        {[...Array(4)].map((_,i) => <div key={i} className="h-24 bg-gray-200 rounded-xl"/>)}
+      </div>
+    </div>
+  )
 
   const stats = [
     { label: 'Total Member', value: data.members.total, icon: '👥', color: 'bg-blue-500' },
@@ -36,16 +66,30 @@ export default function DashboardPage() {
     ? ((data.revenue.thisMonth - data.revenue.lastMonth) / data.revenue.lastMonth * 100).toFixed(1)
     : null
 
-  // Plan limits
   const maxMembers = user?.tenantMaxMembers || 50
-  const maxInstructors = user?.tenantMaxInstructors || 3
-  const maxClasses = user?.tenantMaxClasses || 5
   const memberUsage = data.members.total
   const memberPct = Math.min((memberUsage / maxMembers) * 100, 100)
   const memberWarning = memberPct >= 80
 
   return (
     <div className="space-y-6">
+      {/* Banner demo */}
+      {isDemo && (
+        <div className="flex items-center justify-between bg-blue-50 border border-blue-200 rounded-xl px-4 py-3">
+          <span className="text-sm text-blue-700">
+            <i className="bi bi-info-circle me-2" />
+            Ini adalah akun demo. Data dapat direset kapan saja.
+          </span>
+          <button
+            onClick={handleResetDemo}
+            disabled={resetting}
+            className="text-xs px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-60 disabled:cursor-wait"
+          >
+            {resetting ? 'Mereset...' : '↺ Reset Demo'}
+          </button>
+        </div>
+      )}
+
       {/* Plan info bar */}
       <div className="bg-white rounded-xl p-4 shadow-sm border flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -79,7 +123,7 @@ export default function DashboardPage() {
           </div>
           {memberPct >= 80 && (
             <p className="text-xs text-orange-600">
-              ⚠️ Mendekati batas paket. Upgrade ke plan lebih tinggi untuk menambah kapasitas.
+              Mendekati batas paket. Upgrade ke plan lebih tinggi untuk menambah kapasitas.
             </p>
           )}
         </div>
