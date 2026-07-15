@@ -56,10 +56,10 @@ export default function DashboardPage() {
   )
 
   const stats = [
-    { label: 'Total Member', value: data.members.total, icon: '👥', color: 'bg-blue-500' },
-    { label: 'Member Aktif', value: data.members.active, icon: '✅', color: 'bg-green-500' },
-    { label: 'Omset Bulan Ini', value: formatRp(data.revenue.thisMonth), icon: '💰', color: 'bg-yellow-500' },
-    { label: 'Absensi Bulan Ini', value: data.attendance.thisMonth, icon: '📊', color: 'bg-purple-500' },
+    { label: 'Total Member',    value: data.members.total,               icon: 'bi-people-fill',        color: 'bg-blue-500' },
+    { label: 'Member Aktif',    value: data.members.active,              icon: 'bi-check-circle-fill',  color: 'bg-green-500' },
+    { label: 'Omset Bulan Ini', value: formatRp(data.revenue.thisMonth), icon: 'bi-cash-coin',          color: 'bg-yellow-500' },
+    { label: 'Absensi Bulan Ini', value: data.attendance.thisMonth,      icon: 'bi-clipboard-check-fill', color: 'bg-purple-500' },
   ]
 
   const revenueChange = data.revenue.lastMonth > 0
@@ -123,6 +123,7 @@ export default function DashboardPage() {
           </div>
           {memberPct >= 80 && (
             <p className="text-xs text-orange-600">
+              <i className="bi bi-exclamation-triangle me-1" />
               Mendekati batas paket. Upgrade ke plan lebih tinggi untuk menambah kapasitas.
             </p>
           )}
@@ -134,7 +135,9 @@ export default function DashboardPage() {
         {stats.map((s) => (
           <div key={s.label} className="bg-white rounded-xl p-5 shadow-sm border">
             <div className="flex items-center gap-3">
-              <div className={`${s.color} text-white p-3 rounded-lg text-xl`}>{s.icon}</div>
+              <div className={`${s.color} text-white p-3 rounded-lg`}>
+                <i className={`bi ${s.icon} text-xl`} />
+              </div>
               <div>
                 <p className="text-sm text-gray-500">{s.label}</p>
                 <p className="text-2xl font-bold text-gray-800">{s.value}</p>
