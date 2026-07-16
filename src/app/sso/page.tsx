@@ -41,7 +41,7 @@ function SsoContent() {
           </>
         ) : (
           <>
-            <div className="text-4xl mb-4">❌</div>
+            <i className="bi bi-x-circle-fill text-red-500 text-4xl block mb-4" />
             <p className="text-red-400 font-medium mb-2">Gagal Login</p>
             <p className="text-slate-500 text-sm mb-4">{msg}</p>
             <a href="https://zone.zomet.my.id" className="text-blue-400 text-sm underline">Kembali ke Z One</a>

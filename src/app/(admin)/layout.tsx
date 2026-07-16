@@ -27,7 +27,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     <div className="min-h-screen bg-gray-50">
       <header className="bg-slate-900 text-white px-6 py-4">
         <div className="flex items-center justify-between">
-          <h1 className="text-xl font-bold">🏋️ ZGym Super Admin</h1>
+          <h1 className="text-xl font-bold flex items-center gap-2"><i className="bi bi-lightning-charge-fill text-yellow-400" /> ZGym Super Admin</h1>
           <span className="text-slate-400 text-sm">{session.user.email}</span>
         </div>
       </header>

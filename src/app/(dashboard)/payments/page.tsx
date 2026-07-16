@@ -164,7 +164,7 @@ export default function PaymentsPage() {
 
               <div className="text-center text-xs text-gray-500">
                 <p>Terima kasih atas pembayaran Anda!</p>
-                <p>Selamat berlatih 💪</p>
+                <p>Selamat berlatih <i className="bi bi-trophy-fill text-yellow-500" /></p>
               </div>
             </div>
 

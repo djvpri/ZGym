@@ -45,7 +45,7 @@ export default function RegisterPage() {
     <div className="min-h-screen flex items-center justify-center bg-gray-100 py-12">
       <div className="bg-white p-8 rounded-2xl shadow-lg w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-800">🏋️ ZGym</h1>
+          <h1 className="text-3xl font-bold text-gray-800 flex items-center justify-center gap-2"><i className="bi bi-lightning-charge-fill text-yellow-400" /> ZGym</h1>
           <p className="text-gray-500 mt-2">Daftarkan Gym Anda</p>
         </div>
 

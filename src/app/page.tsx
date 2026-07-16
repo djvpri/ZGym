@@ -2,32 +2,32 @@ import Link from 'next/link'
 
 const features = [
   {
-    icon: '🏋️',
+    icon: 'bi-people-fill',
     title: 'Manajemen Member',
     desc: 'Daftar, perpanjang, lacak aktivitas member. Nomor otomatis, status real-time.',
   },
   {
-    icon: '📅',
+    icon: 'bi-calendar3',
     title: 'Jadwal & Booking',
     desc: 'Kalender mingguan, booking kelas online, kapasitas otomatis.',
   },
   {
-    icon: '✅',
+    icon: 'bi-clipboard-check-fill',
     title: 'Absensi Cepat',
     desc: 'Check-in/out manual atau QR code. Riwayat lengkap per member.',
   },
   {
-    icon: '💪',
+    icon: 'bi-person-badge-fill',
     title: 'Personal Trainer',
     desc: 'Jadwalkan sesi PT, lacak progress, kelola pembayaran per sesi.',
   },
   {
-    icon: '💰',
+    icon: 'bi-cash-coin',
     title: 'Pembayaran',
     desc: 'Tagihan otomatis, multi metode bayar, laporan keuangan real-time.',
   },
   {
-    icon: '📊',
+    icon: 'bi-bar-chart-line-fill',
     title: 'Laporan Bisnis',
     desc: 'Omset, pertumbuhan member, kelas populer — semua ada di dashboard.',
   },
@@ -56,7 +56,7 @@ const plans = [
     name: 'Pro',
     price: '500K',
     period: '/bulan',
-    desc: 'Paling populer ⭐',
+    desc: 'Paling populer',
     features: ['500 Member', '25 Instruktur', '50 Kelas', 'Semua fitur', 'Prioritas support', 'Custom branding'],
     highlight: true,
     cta: 'Pilih Pro',
@@ -85,7 +85,7 @@ export default function LandingPage() {
       <nav className="bg-white border-b border-gray-100 sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="text-2xl">🏋️</span>
+            <i className="bi bi-lightning-charge-fill text-yellow-500 text-2xl" />
             <span className="text-xl font-bold text-gray-900">ZGym</span>
           </div>
           <div className="hidden md:flex items-center gap-8 text-sm text-gray-600">
@@ -113,7 +113,7 @@ export default function LandingPage() {
         <div className="max-w-6xl mx-auto px-4 py-24 md:py-32 relative">
           <div className="max-w-3xl">
             <div className="inline-block bg-white/10 text-sm px-3 py-1 rounded-full mb-6">
-              💪 Sistem Manajemen Gym #1 di Indonesia
+              <i className="bi bi-trophy-fill text-yellow-300 mr-1" /> Sistem Manajemen Gym #1 di Indonesia
             </div>
             <h1 className="text-4xl md:text-6xl font-bold leading-tight mb-6">
               Kelola Gym<br />
@@ -137,8 +137,12 @@ export default function LandingPage() {
                 Lihat Harga
               </a>
             </div>
-            <p className="mt-6 text-sm text-blue-200">
-              ✅ Gratis untuk 50 member pertama &nbsp;·&nbsp; ✅ Tanpa kartu kredit &nbsp;·&nbsp; ✅ Setup 5 menit
+            <p className="mt-6 text-sm text-blue-200 flex flex-wrap items-center gap-x-3 gap-y-1">
+              <span><i className="bi bi-check-circle-fill text-green-300 mr-1" />Gratis untuk 50 member pertama</span>
+              <span>·</span>
+              <span><i className="bi bi-check-circle-fill text-green-300 mr-1" />Tanpa kartu kredit</span>
+              <span>·</span>
+              <span><i className="bi bi-check-circle-fill text-green-300 mr-1" />Setup 5 menit</span>
             </p>
           </div>
         </div>
@@ -186,7 +190,7 @@ export default function LandingPage() {
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {features.map((f, i) => (
               <div key={i} className="bg-white rounded-2xl p-8 shadow-sm border hover:shadow-md transition">
-                <div className="text-4xl mb-4">{f.icon}</div>
+                <i className={`bi ${f.icon} text-4xl text-blue-600 mb-4 block`} />
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">{f.title}</h3>
                 <p className="text-gray-500 text-sm leading-relaxed">{f.desc}</p>
               </div>
@@ -323,7 +327,7 @@ export default function LandingPage() {
           <div className="grid md:grid-cols-4 gap-8">
             <div>
               <div className="flex items-center gap-2 mb-4">
-                <span className="text-xl">🏋️</span>
+                <i className="bi bi-lightning-charge-fill text-yellow-400 text-xl" />
                 <span className="text-lg font-bold text-white">ZGym</span>
               </div>
               <p className="text-sm leading-relaxed">
