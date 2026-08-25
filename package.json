@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "prisma generate && NEXT_TELEMETRY_DISABLED=1 next build --no-lint",
-    "start": "next start",
+    "start": "prisma db push --skip-generate && next start",
     "lint": "next lint"
   },
   "dependencies": {
