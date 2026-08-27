@@ -8,8 +8,7 @@ export function middleware(request: NextRequest) {
   if (
     path.startsWith('/login') ||
     path.startsWith('/register') ||
-    path.startsWith('/api/auth') ||
-    path.startsWith('/api/register')
+    path.startsWith('/api/auth')
   ) {
     return NextResponse.next()
   }
