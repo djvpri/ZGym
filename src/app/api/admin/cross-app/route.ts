@@ -84,15 +84,17 @@ export async function POST(req: NextRequest) {
       if (!data?.name || !data?.email || !data?.password) {
         return NextResponse.json({ error: 'name, email, password wajib' }, { status: 400 })
       }
-      const existing = await prisma.user.findUnique({ where: { email: data.email } })
-      if (existing) return NextResponse.json({ error: 'Email sudah terdaftar' }, { status: 409 })
-
+      // User.email unik PER tenant (@@unique([tenantId, email])), bukan global —
+      // cek existing harus per tenant, bukan findUnique({where:{email}}).
       let tenantId = data.tenantId
       if (!tenantId) {
         const firstTenant = await prisma.tenant.findFirst({ orderBy: { createdAt: 'asc' } })
         if (!firstTenant) return NextResponse.json({ error: 'Belum ada tenant' }, { status: 400 })
         tenantId = firstTenant.id
       }
+      const existing = await prisma.user.findFirst({ where: { tenantId, email: data.email } })
+      if (existing) return NextResponse.json({ error: 'Email sudah terdaftar' }, { status: 409 })
+
       const hashed = await bcrypt.hash(data.password, 10)
       const user = await prisma.user.create({ data: { name: data.name, email: data.email, password: hashed, role: data.role || 'member', tenantId } })
       return NextResponse.json({ success: true, user }, { status: 201 })
