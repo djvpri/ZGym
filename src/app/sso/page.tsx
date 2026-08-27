@@ -14,7 +14,7 @@ function SsoContent() {
   useEffect(() => {
     if (!token) {
       setStatus('error')
-      setMsg('Token tidak ditemukan. Buka ZGym lewat Z One lagi.')
+      setMsg('Token tidak ditemukan. Buka ZXgym lewat Z One lagi.')
       return
     }
     signIn('credentials', { ssoToken: token, email: '', password: '', redirect: false })
@@ -22,12 +22,12 @@ function SsoContent() {
         if (res?.ok) window.location.replace('/dashboard')
         else {
           setStatus('error')
-          setMsg('Login SSO gagal. Pastikan akun terdaftar & aktif di ZGym.')
+          setMsg('Login SSO gagal. Pastikan akun terdaftar & aktif di ZXgym.')
         }
       })
       .catch(() => {
         setStatus('error')
-        setMsg('Tidak dapat terhubung ke server ZGym')
+        setMsg('Tidak dapat terhubung ke server ZXgym')
       })
   }, [token])
 

@@ -73,8 +73,8 @@ const plans = [
 ]
 
 const testimonials = [
-  { name: 'Andi', gym: 'Gym Demo', text: 'ZGym beneran ngasih kemudahan. Member gw tinggal daftar online, langsung kebayar. Gak perlu ribet lagi.' },
-  { name: 'Rina', gym: 'Fitness Plus', text: 'Sejak pakai ZGym, laporan keuangan jadi jelas. Tau persis berapa omset tiap bulan.' },
+  { name: 'Andi', gym: 'Gym Demo', text: 'ZXgym beneran ngasih kemudahan. Member gw tinggal daftar online, langsung kebayar. Gak perlu ribet lagi.' },
+  { name: 'Rina', gym: 'Fitness Plus', text: 'Sejak pakai ZXgym, laporan keuangan jadi jelas. Tau persis berapa omset tiap bulan.' },
   { name: 'Budi', gym: 'Power Gym', text: 'Fitur absensi QR code-nya keren. Member tinggal scan, langsung kecatat. Simple!' },
 ]
 
@@ -86,7 +86,7 @@ export default function LandingPage() {
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <i className="bi bi-lightning-charge-fill text-yellow-500 text-2xl" />
-            <span className="text-xl font-bold text-gray-900">ZGym</span>
+            <span className="text-xl font-bold text-gray-900">ZXgym</span>
           </div>
           <div className="hidden md:flex items-center gap-8 text-sm text-gray-600">
             <a href="#fitur" className="hover:text-blue-600 transition">Fitur</a>
@@ -328,7 +328,7 @@ export default function LandingPage() {
             <div>
               <div className="flex items-center gap-2 mb-4">
                 <i className="bi bi-lightning-charge-fill text-yellow-400 text-xl" />
-                <span className="text-lg font-bold text-white">ZGym</span>
+                <span className="text-lg font-bold text-white">ZXgym</span>
               </div>
               <p className="text-sm leading-relaxed">
                 Sistem manajemen gym modern. Kelola member, jadwal, dan keuangan dalam satu aplikasi.
@@ -359,7 +359,7 @@ export default function LandingPage() {
             </div>
           </div>
           <div className="border-t border-gray-800 mt-8 pt-8 text-center text-xs">
-            &copy; {new Date().getFullYear()} ZGym. All rights reserved.
+            &copy; {new Date().getFullYear()} ZXgym. All rights reserved.
           </div>
         </div>
       </footer>

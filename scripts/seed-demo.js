@@ -1,4 +1,4 @@
-// Seed data DEMO untuk ZGym — mengisi tenant tempat akun demo@zomet.my.id berada
+// Seed data DEMO untuk ZXgym — mengisi tenant tempat akun demo@zomet.my.id berada
 // (yang diakses lewat SSO dari Z One) dengan member, kelas, jadwal, membership,
 // absensi, sesi PT, pembayaran, dan produk yang realistis & tersebar ~3 bulan.
 //

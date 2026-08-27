@@ -27,7 +27,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           try {
             // clockTolerance: jam antar-server bisa selisih puluhan detik
             // (skew). Tanpa ini, token SSO 60 detik dari ZOne bisa langsung
-            // dianggap kedaluwarsa di ZGym → TokenExpiredError → login gagal.
+            // dianggap kedaluwarsa di ZXgym → TokenExpiredError → login gagal.
             const payload = jwt.verify(
               (credentials as any).ssoToken as string,
               getCrossAppSecret(),

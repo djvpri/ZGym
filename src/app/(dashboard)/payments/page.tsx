@@ -115,7 +115,7 @@ export default function PaymentsPage() {
             <div id="nota-payment-list" className="p-6 font-mono text-sm">
               <div className="text-center mb-4">
                 <div className="text-lg font-bold flex items-center justify-center gap-2">
-                  <i className="bi bi-trophy" /> ZGym
+                  <i className="bi bi-trophy" /> ZXgym
                 </div>
                 <div className="text-xs text-gray-500 mt-1">Gym Management System</div>
                 <div className="border-t border-dashed border-gray-300 my-3" />

@@ -8,7 +8,7 @@ import { Toaster } from 'react-hot-toast'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'ZGym — Gym Management System',
+  title: 'ZXgym — Gym Management System',
   description: 'Sistem manajemen gym lengkap',
 }
 

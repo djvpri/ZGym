@@ -27,7 +27,7 @@ async function main() {
     where: { slug: 'system' },
     update: {},
     create: {
-      name: 'ZGym System',
+      name: 'ZXgym System',
       slug: 'system',
       email: 'admin@zgym.id',
       plan: 'enterprise',

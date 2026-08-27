@@ -42,7 +42,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <div className="p-6">
           <div className="flex items-center gap-2">
             <i className="bi bi-lightning-charge-fill text-yellow-400 text-xl" />
-            <h1 className="text-xl font-bold tracking-tight">ZGym</h1>
+            <h1 className="text-xl font-bold tracking-tight">ZXgym</h1>
           </div>
           {user?.tenantName && (
             <div className="mt-3">
@@ -100,7 +100,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </svg>
           </button>
           <h2 className="text-base font-semibold text-gray-800">
-            {menuItems.find((m) => m.href === pathname)?.label || 'ZGym'}
+            {menuItems.find((m) => m.href === pathname)?.label || 'ZXgym'}
           </h2>
         </header>
 

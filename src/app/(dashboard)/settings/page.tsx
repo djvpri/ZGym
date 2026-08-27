@@ -66,7 +66,7 @@ export default function SettingsPage() {
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Nama Gym</label>
             <input value={settings.gym_name || ''} onChange={(e) => setSettings({ ...settings, gym_name: e.target.value })}
-              className="w-full px-3 py-2 border rounded-lg" placeholder="ZGym Fitness" />
+              className="w-full px-3 py-2 border rounded-lg" placeholder="ZXgym Fitness" />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Alamat</label>
