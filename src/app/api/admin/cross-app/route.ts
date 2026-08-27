@@ -67,6 +67,19 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: true })
     }
 
+    if (action === 'reactivateTenant') {
+      if (!data?.tenantId) return NextResponse.json({ error: 'tenantId wajib' }, { status: 400 })
+      await prisma.tenant.update({ where: { id: data.tenantId }, data: { isActive: true } })
+      return NextResponse.json({ success: true, reactivated: true })
+    }
+
+    if (action === 'moveTenant') {
+      // Pindahkan user ke tenant lain (dari hub: data = { userId, tenantId })
+      if (!data?.userId || !data?.tenantId) return NextResponse.json({ error: 'userId & tenantId wajib' }, { status: 400 })
+      await prisma.user.update({ where: { id: data.userId }, data: { tenantId: data.tenantId } })
+      return NextResponse.json({ success: true, moved: true })
+    }
+
     if (action === 'deleteTenant') {
       if (!data?.tenantId) return NextResponse.json({ error: 'tenantId wajib' }, { status: 400 })
       await prisma.tenant.update({ where: { id: data.tenantId }, data: { isActive: false } })
