@@ -13,6 +13,7 @@ declare module 'next-auth' {
       tenantMaxMembers?: number
       tenantMaxInstructors?: number
       tenantMaxClasses?: number
+      joinToken?: string
     } & DefaultSession['user']
   }
 }
@@ -29,5 +30,6 @@ declare module 'next-auth/jwt' {
     tenantMaxMembers?: number
     tenantMaxInstructors?: number
     tenantMaxClasses?: number
+    joinToken?: string
   }
 }
