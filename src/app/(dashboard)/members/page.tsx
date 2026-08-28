@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useSession } from 'next-auth/react'
+import { toast } from 'react-hot-toast'
 
 const statusColors: Record<string, string> = {
   active: 'bg-green-100 text-green-700',
@@ -37,6 +38,9 @@ export default function MembersPage() {
       document.body.removeChild(a)
       // revoke belakangan — browser perlu waktu utk mulai unduh dr blob URL
       setTimeout(() => URL.revokeObjectURL(a.href), 2000)
+      toast.success(`Kode QR ter-unduh: qr-gabung-${t.joinToken.slice(0, 8)}.png`)
+    } catch {
+      toast.error('Gagal mengunduh kode QR. Coba lagi.')
     } finally {
       setDownloading(false)
     }

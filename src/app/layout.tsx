@@ -17,6 +17,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="id">
       <body className={inter.className}>
         <SessionProvider>{children}</SessionProvider>
+        <Toaster position="top-center" />
       </body>
     </html>
   )
