@@ -140,6 +140,36 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: true, user, tenantId: tenant.id }, { status: 201 })
     }
 
+    if (action === 'selfCheckin') {
+      // Absen mandiri member via QR absensi (dari hub ZOne). data = { joinToken, email }
+      // Tanpa requireTenant karena disebut cross-app. Identitas member diregenerasi dari email (unik di tenant).
+      const joinToken = String(data?.joinToken || '')
+      const emailRaw = String(data?.email || email || '').trim().toLowerCase()
+      if (!joinToken || !emailRaw) return NextResponse.json({ error: 'joinToken & email wajib' }, { status: 400 })
+
+      const tenant = await prisma.tenant.findFirst({ where: { joinToken, isActive: true } })
+      if (!tenant) return NextResponse.json({ error: 'QR absensi tidak valid' }, { status: 404 })
+
+      const member = await prisma.user.findFirst({
+        where: { email: emailRaw, tenantId: tenant.id, role: 'member', isActive: true },
+      })
+      if (!member) return NextResponse.json({ error: 'Member tidak ditemukan di tenant ini' }, { status: 404 })
+
+      // Cegah dobel check-in hari ini yang masih aktif (belum check-out)
+      const startOfDay = new Date()
+      startOfDay.setHours(0, 0, 0, 0)
+      const existing = await prisma.attendance.findFirst({
+        where: { tenantId: tenant.id, memberId: member.id, checkIn: { gte: startOfDay }, checkOut: null },
+      })
+      if (existing) return NextResponse.json({ error: 'Sudah absen masuk hari ini', status: 'already' }, { status: 409 })
+
+      const attendance = await prisma.attendance.create({
+        data: { tenantId: tenant.id, memberId: member.id, method: 'qr' },
+        include: { member: true },
+      })
+      return NextResponse.json({ success: true, attendance }, { status: 201 })
+    }
+
     if (action === 'setJoinToken') {
       if (!data?.tenantId) return NextResponse.json({ error: 'tenantId wajib' }, { status: 400 })
       const token = randomUUID()
