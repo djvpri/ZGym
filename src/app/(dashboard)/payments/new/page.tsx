@@ -52,7 +52,18 @@ export default function NewPaymentPage() {
       const qp = q.get('planId') || ''
       const plan = (pl as any[]).find(p => p.id === qp && p.isActive)
       let next = { ...form }
-      if (m.some((x: any) => x.id === qm)) next.memberId = qm
+      if (m.some((x: any) => x.id === qm)) {
+        next.memberId = qm
+      } else if (qm) {
+        // Member non-active (mis. inactive/expired) tak ada di list ?status=active,
+        // tapi boleh dari detail member -> fetch satuan agar nama tetap muncul.
+        fetch(`/api/members/${qm}`).then(r => r.ok ? r.json() : null).then((dm: any) => {
+          if (dm && !cancelled) {
+            setMembers(prev => prev.some((x: any) => x.id === dm.id) ? prev : [dm, ...prev])
+            setForm(cur => ({ ...cur, memberId: dm.id, membershipPlanId: qp, amount: plan ? Number(plan.price) : cur.amount, description: plan ? plan.name : cur.description }))
+          }
+        }).catch(() => {})
+      }
       if (plan) next = { ...next, membershipPlanId: qp, amount: Number(plan.price), description: plan.name }
       setForm(next)
     })
