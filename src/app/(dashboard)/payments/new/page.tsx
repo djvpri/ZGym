@@ -157,7 +157,7 @@ export default function NewPaymentPage() {
           </div>
           <div className="flex gap-3 pt-2">
             <button type="submit" disabled={loading} className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50">
-              {loading ? 'Menyimpan...' : 'Simpan'}
+              {loading ? 'Menyimpan...' : 'Bayar'}
             </button>
             <button type="button" onClick={() => router.back()} className="px-6 py-2 border rounded-lg hover:bg-gray-50">Batal</button>
           </div>
