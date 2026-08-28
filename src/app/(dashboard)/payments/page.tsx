@@ -100,7 +100,7 @@ export default function PaymentsPage() {
                 ) : payments.map((p) => (
                   <tr key={p.id} className="hover:bg-gray-50">
                     <td className="px-4 py-3">{new Date(p.paidAt).toLocaleDateString('id-ID')}</td>
-                    <td className="px-4 py-3 font-medium">{p.member?.name}</td>
+                    <td className="px-4 py-3 font-medium">{p.member?.name || p.guestName || '-'}</td>
                     <td className="px-4 py-3">{p.description}</td>
                     <td className="px-4 py-3"><span className={`px-2 py-1 rounded-full text-xs font-medium ${typeColors[p.type] || 'bg-gray-100'}`}>{TYPE_LABEL[p.type] || p.type}</span></td>
                     <td className="px-4 py-3">{METHOD_LABEL[p.method] || p.method}</td>
@@ -146,7 +146,7 @@ export default function PaymentsPage() {
               <div className="space-y-1 text-xs mb-3">
                 <div className="nota-row flex justify-between">
                   <span className="text-gray-500">Member</span>
-                  <span className="font-semibold">{printPayment.member?.name}</span>
+                  <span className="font-semibold">{printPayment.member?.name || printPayment.guestName || '-'}</span>
                 </div>
                 <div className="nota-row flex justify-between">
                   <span className="text-gray-500">Tipe</span>

@@ -23,7 +23,8 @@ export default function NewPaymentPage() {
   const router = useRouter()
   const [members, setMembers] = useState<any[]>([])
   const [plans, setPlans] = useState<any[]>([])
-  const [form, setForm] = useState({ memberId: '', type: 'membership', description: '', amount: 0, method: 'cash', notes: '', membershipPlanId: '' })
+  const [form, setForm] = useState({ memberId: '', type: 'membership', description: '', amount: 0, method: 'cash', notes: '', membershipPlanId: '', guestName: '' })
+  const [payFor, setPayFor] = useState<'member' | 'guest'>('member')
   const [loading, setLoading] = useState(false)
   const [receipt, setReceipt] = useState<Receipt | null>(null)
   const [notaDesign, setNotaDesign] = useState<string>('classic')
@@ -75,8 +76,10 @@ export default function NewPaymentPage() {
     e.preventDefault()
     setLoading(true)
 
+    const isGuest = payFor === 'guest'
     let membershipId = null
-    if (form.type === 'membership' && form.membershipPlanId) {
+    // Hanya member yg bisa aktifkan membership (butuh Member utk update expiry/status).
+    if (!isGuest && form.type === 'membership' && form.membershipPlanId) {
       const memRes = await fetch('/api/memberships', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -91,14 +94,14 @@ export default function NewPaymentPage() {
     await fetch('/api/payments', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...form, membershipId, amount: Number(form.amount) }),
+      body: JSON.stringify({ ...form, memberId: isGuest ? '' : form.memberId, guestName: isGuest ? form.guestName : '', membershipId, amount: Number(form.amount) }),
     })
 
     setLoading(false)
     const member = members.find(m => m.id === form.memberId)
     const plan = plans.find(p => p.id === form.membershipPlanId)
     setReceipt({
-      memberName: member?.name || '-',
+      memberName: isGuest ? form.guestName : (member?.name || '-'),
       type: form.type,
       description: form.description,
       planName: plan?.name,
@@ -129,22 +132,38 @@ export default function NewPaymentPage() {
         <h1 className="text-2xl font-bold mb-6">Catat Pembayaran</h1>
         <form onSubmit={handleSubmit} className="bg-white rounded-xl p-6 shadow-sm border space-y-4">
           <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Dibayar oleh</label>
+            <div className="flex gap-2">
+              <button type="button" onClick={() => setPayFor('member')}
+                className={`px-4 py-2 rounded-lg text-sm font-medium ${payFor === 'member' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600'}`}>Member</button>
+              <button type="button" onClick={() => setPayFor('guest')}
+                className={`px-4 py-2 rounded-lg text-sm font-medium ${payFor === 'guest' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600'}`}>Guest (tanpa member)</button>
+            </div>
+          </div>
+          {payFor === 'member' ? (
+          <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Member</label>
             <select value={form.memberId} onChange={(e) => setForm({ ...form, memberId: e.target.value })} className="w-full px-3 py-2 border rounded-lg" required>
               <option value="">Pilih member...</option>
               {members.map((m) => <option key={m.id} value={m.id}>{m.memberNumber} — {m.name}</option>)}
             </select>
           </div>
+          ) : (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Nama Guest</label>
+            <input value={form.guestName} onChange={(e) => setForm({ ...form, guestName: e.target.value })} className="w-full px-3 py-2 border rounded-lg" placeholder="Nama pengunjung" required />
+          </div>
+          )}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Tipe Pembayaran</label>
             <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })} className="w-full px-3 py-2 border rounded-lg">
-              <option value="membership">Membership</option>
+              {payFor === 'member' && <option value="membership">Membership</option>}
               <option value="pt_session">Personal Training</option>
               <option value="product">Produk</option>
               <option value="other">Lainnya</option>
             </select>
           </div>
-          {form.type === 'membership' && (
+          {payFor === 'member' && form.type === 'membership' && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Paket Membership</label>
               <select value={form.membershipPlanId} onChange={(e) => {

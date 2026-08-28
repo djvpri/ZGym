@@ -242,7 +242,8 @@ model PtSession {
 model Payment {
   id           String   @id @default(cuid())
   tenantId     String
-  memberId     String
+  memberId     String?
+  guestName    String?
   membershipId String?
   ptSessionId  String?
   type         String // membership, pt_session, product, other
@@ -254,7 +255,7 @@ model Payment {
   notes        String?
 
   tenant     Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  member     Member      @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  member     Member?     @relation(fields: [memberId], references: [id], onDelete: Cascade)
   membership Membership? @relation(fields: [membershipId], references: [id])
   ptSession  PtSession?  @relation(fields: [ptSessionId], references: [id])
 
