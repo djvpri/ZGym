@@ -20,6 +20,23 @@ export default function MembersPage() {
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
   const [copied, setCopied] = useState(false)
+  const [downloading, setDownloading] = useState(false)
+
+  const downloadQR = async () => {
+    const url = `https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(`${JOIN_URL}/${t.joinToken}`)}&size=1024x1024&margin=8`
+    try {
+      setDownloading(true)
+      const res = await fetch(url)
+      const blob = await res.blob()
+      const a = document.createElement('a')
+      a.href = URL.createObjectURL(blob)
+      a.download = `qr-gabung-${t.joinToken.slice(0, 8)}.png`
+      a.click()
+      URL.revokeObjectURL(a.href)
+    } finally {
+      setDownloading(false)
+    }
+  }
 
   const fetchMembers = () => {
     const params = new URLSearchParams()
@@ -46,15 +63,23 @@ export default function MembersPage() {
           <div className="flex-1 w-full">
             <div className="flex items-center justify-between gap-2 flex-wrap mb-1">
               <h2 className="font-semibold text-gray-800">QR Gabung Member</h2>
-              <button
-                onClick={() => {
-                  navigator.clipboard.writeText(`${JOIN_URL}/${t.joinToken}`)
-                  setCopied(true)
-                  setTimeout(() => setCopied(false), 1500)
-                }}
-                className="text-xs px-3 py-1.5 bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 rounded-lg hover:bg-emerald-500/20 transition">
-                {copied ? '✓ Disalin' : 'Salin Link'}
-              </button>
+              <div className="flex flex-col gap-2">
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(`${JOIN_URL}/${t.joinToken}`)
+                    setCopied(true)
+                    setTimeout(() => setCopied(false), 1500)
+                  }}
+                  className="text-xs px-3 py-1.5 bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 rounded-lg hover:bg-emerald-500/20 transition">
+                  {copied ? '✓ Disalin' : 'Salin Link'}
+                </button>
+                <button
+                  onClick={downloadQR}
+                  disabled={downloading}
+                  className="text-xs px-3 py-1.5 bg-blue-500/10 text-blue-600 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition disabled:opacity-50">
+                  {downloading ? 'Menyiapkan...' : 'Download QR'}
+                </button>
+              </div>
             </div>
             <p className="text-sm text-gray-500 mb-2">
               Bagikan QR/link ini ke kandidat member — mereka daftar sendiri, langsung masuk sebagai member
