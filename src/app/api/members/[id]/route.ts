@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic"
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireTenant } from '@/lib/tenant'
+import { computeStatus } from '@/lib/memberStatus'
 
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
   const tenantId = await requireTenant()
@@ -15,6 +16,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     },
   })
   if (!member) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  ;(member as any).status = computeStatus(member)
   return NextResponse.json(member)
 }
 

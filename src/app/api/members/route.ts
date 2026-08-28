@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic"
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireTenant } from '@/lib/tenant'
+import { computeStatus } from '@/lib/memberStatus'
 
 export async function GET(req: NextRequest) {
   const tenantId = await requireTenant()
@@ -26,6 +27,8 @@ export async function GET(req: NextRequest) {
     orderBy: { createdAt: 'desc' },
   })
 
+  // Override status dgn status dinamis (auto-expire) utk tampilan konsisten di list.
+  members.forEach((m: any) => { m.status = computeStatus(m) })
   return NextResponse.json(members)
 }
 

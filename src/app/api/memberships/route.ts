@@ -11,26 +11,50 @@ export async function POST(req: NextRequest) {
   const plan = await prisma.membershipPlan.findFirst({ where: { id: body.planId, tenantId } })
   if (!plan) return NextResponse.json({ error: 'Plan not found' }, { status: 404 })
 
-  const startDate = new Date()
+  const member = await prisma.member.findFirst({ where: { id: body.memberId, tenantId } })
+  if (!member) return NextResponse.json({ error: 'Member not found' }, { status: 404 })
+
+  // Renew kontinu: kalau sudah punya membership AKTIF (endDate > now), perpanjang dari
+  // endDate yg ada (bukan reset ke hari ini) biar masa berlaku menumpuk. update status member.
+  const now = new Date()
+  const existingActive = await prisma.membership.findFirst({
+    where: { memberId: member.id, status: 'active', endDate: { gt: now } },
+    orderBy: { endDate: 'desc' },
+  })
+
+  const startDate = existingActive && existingActive.endDate > now ? existingActive.endDate : now
   const endDate = new Date(startDate)
   endDate.setDate(endDate.getDate() + plan.duration)
 
   // Update member expiry
   await prisma.member.update({
-    where: { id: body.memberId },
+    where: { id: member.id },
     data: { expiryDate: endDate, status: 'active' },
   })
 
   const membership = await prisma.membership.create({
     data: {
       tenantId,
-      memberId: body.memberId,
-      planId: body.planId,
+      memberId: member.id,
+      planId: plan.id,
       startDate,
       endDate,
     },
     include: { plan: true },
   })
 
-  return NextResponse.json(membership, { status: 201 })
+  // Catat pembayaran otomatis utk membership ini (type=membership, amount=harga plan)
+  await prisma.payment.create({
+    data: {
+      tenantId,
+      memberId: member.id,
+      membershipId: membership.id,
+      type: 'membership',
+      description: `${plan.name} (${membership.id.slice(0, 8)})`,
+      amount: plan.price,
+      method: body.method || 'cash',
+    },
+  })
+
+  return NextResponse.json({ ...membership, renew: Boolean(existingActive && existingActive.endDate > now) }, { status: 201 })
 }
