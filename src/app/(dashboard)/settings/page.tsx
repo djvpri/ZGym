@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { NOTA_DESIGNS } from '@/lib/notaDesign'
+import { NOTA_DESIGNS, NOTA_CSS } from '@/lib/notaDesign'
 
 function formatRp(n: number) { return 'Rp ' + n.toLocaleString('id-ID') }
 
@@ -79,6 +79,7 @@ export default function SettingsPage() {
 
   return (
     <div className="space-y-6">
+      <style>{NOTA_CSS}</style>
       <h1 className="text-xl font-bold">Pengaturan</h1>
 
       {/* Tabs */}
@@ -225,6 +226,43 @@ export default function SettingsPage() {
             <h3 className="font-semibold mb-1">Desain Nota</h3>
             <p className="text-sm text-gray-500">Pilih gaya nota pembayaran yang dicetak dari halaman Catat Pembayaran & daftar Pembayaran.</p>
           </div>
+
+          {/* Preview live nota */}
+          <div>
+            <p className="text-xs font-medium text-gray-500 mb-2">Pratinjau Nota</p>
+            <div className="border rounded-xl overflow-hidden">
+              <div id="nota-preview" data-nota-design={settings.nota_design || 'classic'} className="bg-white p-6 text-sm">
+                <div className="nota-header">
+                  <div className="nota-brand flex items-center justify-center gap-2">
+                    <i className="bi bi-trophy" /> ZXgym
+                  </div>
+                  <div className="nota-sub text-xs text-gray-500 mt-1">Gym Management System</div>
+                  <div className="nota-block my-3" />
+                </div>
+                <div className="space-y-1 text-xs mb-3">
+                  <div className="nota-row flex justify-between"><span className="text-gray-500">Tanggal</span><span>28 Agu 2026</span></div>
+                  <div className="nota-row flex justify-between"><span className="text-gray-500">Jam</span><span>10.05</span></div>
+                </div>
+                <div className="nota-block my-3" />
+                <div className="space-y-1 text-xs mb-3">
+                  <div className="nota-row flex justify-between"><span className="text-gray-500">Member</span><span className="font-semibold">Rudi Hermawan</span></div>
+                  <div className="nota-row flex justify-between"><span className="text-gray-500">Tipe</span><span>Membership</span></div>
+                  <div className="nota-row flex justify-between"><span className="text-gray-500">Deskripsi</span><span className="text-right max-w-[55%]">Paket Bulanan</span></div>
+                  <div className="nota-row flex justify-between"><span className="text-gray-500">Metode</span><span>Tunai</span></div>
+                </div>
+                <div className="nota-block my-3" />
+                <div className="nota-total flex justify-between font-bold text-sm mb-3">
+                  <span>TOTAL</span><span>Rp 150.000</span>
+                </div>
+                <div className="nota-block my-3" />
+                <div className="nota-footer text-center text-xs text-gray-500">
+                  <p>Terima kasih atas pembayaran Anda!</p>
+                  <p>Selamat berlatih <i className="bi bi-trophy-fill text-yellow-500" /></p>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <div className="space-y-2">
             {NOTA_DESIGNS.map((d) => (
               <button key={d.key} type="button" onClick={() => setSettings({ ...settings, nota_design: d.key })}
