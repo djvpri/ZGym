@@ -256,13 +256,21 @@ export default function SettingsPage() {
                 </div>
                 <div className="nota-block my-3" />
                 <div className="nota-footer text-center text-xs text-gray-500">
-                  <p>Terima kasih atas pembayaran Anda!</p>
-                  <p>Selamat berlatih <i className="bi bi-trophy-fill text-yellow-500" /></p>
+                  {(settings.nota_footer || 'Terima kasih atas pembayaran Anda!\nSelamat berlatih!').split('\n').map((line: string, i: number) => (
+                    <p key={i}>{line}</p>
+                  ))}
                 </div>
               </div>
             </div>
           </div>
 
+          <div className="space-y-2">
+            <p className="text-xs font-medium text-gray-500">Catatan Bawah Nota</p>
+            <textarea value={settings.nota_footer || ''} onChange={(e) => setSettings({ ...settings, nota_footer: e.target.value })}
+              placeholder={'Terima kasih atas pembayaran Anda!\nSelamat berlatih!'}
+              className="w-full px-3 py-2 border rounded-lg" rows={2} />
+            <p className="text-xs text-gray-400">Tiap baris = satu baris di nota. Kosongkan utk memakai teks default.</p>
+          </div>
           <div className="space-y-2">
             {NOTA_DESIGNS.map((d) => (
               <button key={d.key} type="button" onClick={() => setSettings({ ...settings, nota_design: d.key })}

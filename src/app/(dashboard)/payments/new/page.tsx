@@ -27,10 +27,14 @@ export default function NewPaymentPage() {
   const [loading, setLoading] = useState(false)
   const [receipt, setReceipt] = useState<Receipt | null>(null)
   const [notaDesign, setNotaDesign] = useState<string>('classic')
+  const [notaFooter, setNotaFooter] = useState('')
 
   useEffect(() => {
     fetch('/api/settings').then(r => r.json()).then(s => {
-      if (s && isNotaDesign(s.nota_design)) setNotaDesign(s.nota_design)
+      if (s) {
+        if (isNotaDesign(s.nota_design)) setNotaDesign(s.nota_design)
+        setNotaFooter(s.nota_footer || '')
+      }
     }).catch(() => {})
   }, [])
 
@@ -240,8 +244,9 @@ export default function NewPaymentPage() {
               <div className="nota-block my-3" />
 
               <div className="nota-footer text-center text-xs text-gray-500">
-                <p>Terima kasih atas pembayaran Anda!</p>
-                <p>Selamat berlatih <i className="bi bi-trophy-fill text-yellow-500" /></p>
+                {(notaFooter || 'Terima kasih atas pembayaran Anda!\nSelamat berlatih!').split('\n').map((line: string, i: number) => (
+                  <p key={i}>{line}</p>
+                ))}
               </div>
             </div>
 
