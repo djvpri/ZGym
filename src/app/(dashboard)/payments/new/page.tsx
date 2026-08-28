@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { NOTA_CSS, isNotaDesign } from '@/lib/notaDesign'
 
 function formatRp(n: number) { return 'Rp ' + n.toLocaleString('id-ID') }
 
@@ -25,6 +26,13 @@ export default function NewPaymentPage() {
   const [form, setForm] = useState({ memberId: '', type: 'membership', description: '', amount: 0, method: 'cash', notes: '', membershipPlanId: '' })
   const [loading, setLoading] = useState(false)
   const [receipt, setReceipt] = useState<Receipt | null>(null)
+  const [notaDesign, setNotaDesign] = useState<string>('classic')
+
+  useEffect(() => {
+    fetch('/api/settings').then(r => r.json()).then(s => {
+      if (s && isNotaDesign(s.nota_design)) setNotaDesign(s.nota_design)
+    }).catch(() => {})
+  }, [])
 
   useEffect(() => {
     let cancelled = false
@@ -99,6 +107,7 @@ export default function NewPaymentPage() {
             width: 100% !important; padding: 24px !important; background: white !important;
           }
         }
+        ${NOTA_CSS}
       `}</style>
 
       <div className="max-w-lg mx-auto">
@@ -168,69 +177,69 @@ export default function NewPaymentPage() {
       {receipt && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 overflow-hidden">
-            <div id="nota-payment" className="p-6 font-mono text-sm">
-              <div className="text-center mb-4">
-                <div className="text-lg font-bold flex items-center justify-center gap-2">
+            <div id="nota-payment" data-nota-design={notaDesign} className="p-6 text-sm">
+              <div className="nota-header">
+                <div className="nota-brand flex items-center justify-center gap-2">
                   <i className="bi bi-trophy" /> ZXgym
                 </div>
-                <div className="text-xs text-gray-500 mt-1">Gym Management System</div>
-                <div className="border-t border-dashed border-gray-300 my-3" />
+                <div className="nota-sub text-xs text-gray-500 mt-1">Gym Management System</div>
+                <div className="nota-block my-3" />
               </div>
 
               <div className="space-y-1 text-xs mb-3">
-                <div className="flex justify-between">
+                <div className="nota-row flex justify-between">
                   <span className="text-gray-500">Tanggal</span>
                   <span>{new Date(receipt.date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
                 </div>
-                <div className="flex justify-between">
+                <div className="nota-row flex justify-between">
                   <span className="text-gray-500">Jam</span>
                   <span>{new Date(receipt.date).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</span>
                 </div>
               </div>
 
-              <div className="border-t border-dashed border-gray-300 my-3" />
+              <div className="nota-block my-3" />
 
               <div className="space-y-1 text-xs mb-3">
-                <div className="flex justify-between">
+                <div className="nota-row flex justify-between">
                   <span className="text-gray-500">Member</span>
                   <span className="font-semibold">{receipt.memberName}</span>
                 </div>
-                <div className="flex justify-between">
+                <div className="nota-row flex justify-between">
                   <span className="text-gray-500">Tipe</span>
                   <span>{TYPE_LABEL[receipt.type] || receipt.type}</span>
                 </div>
-                <div className="flex justify-between">
+                <div className="nota-row flex justify-between">
                   <span className="text-gray-500">Deskripsi</span>
                   <span className="text-right max-w-[55%]">{receipt.description}</span>
                 </div>
                 {receipt.planName && (
-                  <div className="flex justify-between">
+                  <div className="nota-row flex justify-between">
                     <span className="text-gray-500">Paket</span>
                     <span>{receipt.planName}</span>
                   </div>
                 )}
-                <div className="flex justify-between">
+                <div className="nota-row flex justify-between">
                   <span className="text-gray-500">Metode</span>
                   <span>{METHOD_LABEL[receipt.method] || receipt.method}</span>
                 </div>
                 {receipt.notes && (
-                  <div className="flex justify-between">
+                  <div className="nota-row flex justify-between">
                     <span className="text-gray-500">Catatan</span>
                     <span className="text-right max-w-[55%]">{receipt.notes}</span>
                   </div>
                 )}
               </div>
 
-              <div className="border-t border-dashed border-gray-300 my-3" />
+              <div className="nota-block my-3" />
 
-              <div className="flex justify-between font-bold text-sm mb-3">
+              <div className="nota-total flex justify-between font-bold text-sm mb-3">
                 <span>TOTAL</span>
                 <span>{formatRp(receipt.amount)}</span>
               </div>
 
-              <div className="border-t border-dashed border-gray-300 my-3" />
+              <div className="nota-block my-3" />
 
-              <div className="text-center text-xs text-gray-500">
+              <div className="nota-footer text-center text-xs text-gray-500">
                 <p>Terima kasih atas pembayaran Anda!</p>
                 <p>Selamat berlatih <i className="bi bi-trophy-fill text-yellow-500" /></p>
               </div>

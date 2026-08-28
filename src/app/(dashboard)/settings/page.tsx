@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { NOTA_DESIGNS } from '@/lib/notaDesign'
 
 function formatRp(n: number) { return 'Rp ' + n.toLocaleString('id-ID') }
 
@@ -13,7 +14,7 @@ export default function SettingsPage() {
   const [editPlan, setEditPlan] = useState<any>(null)
   const [editInstructor, setEditInstructor] = useState<any>(null)
   const [saving, setSaving] = useState(false)
-  const [tab, setTab] = useState<'gym' | 'plans' | 'instructors'>('gym')
+  const [tab, setTab] = useState<'gym' | 'plans' | 'instructors' | 'nota'>('gym')
 
   useEffect(() => {
     fetch('/api/settings').then(r => r.json()).then(setSettings)
@@ -82,7 +83,7 @@ export default function SettingsPage() {
 
       {/* Tabs */}
       <div className="flex gap-2">
-        {[{ key: 'gym', label: 'Info Gym' }, { key: 'plans', label: 'Paket Membership' }, { key: 'instructors', label: 'Instruktur' }].map((t) => (
+        {[{ key: 'gym', label: 'Info Gym' }, { key: 'plans', label: 'Paket Membership' }, { key: 'instructors', label: 'Instruktur' }, { key: 'nota', label: 'Desain Nota' }].map((t) => (
           <button key={t.key} onClick={() => setTab(t.key as any)}
             className={`px-4 py-2 rounded-lg text-sm font-medium ${tab === t.key ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
             {t.label}
@@ -214,6 +215,28 @@ export default function SettingsPage() {
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* Desain Nota */}
+      {tab === 'nota' && (
+        <div className="bg-white rounded-xl p-6 shadow-sm border space-y-5 max-w-md">
+          <div>
+            <h3 className="font-semibold mb-1">Desain Nota</h3>
+            <p className="text-sm text-gray-500">Pilih gaya nota pembayaran yang dicetak dari halaman Catat Pembayaran & daftar Pembayaran.</p>
+          </div>
+          <div className="space-y-2">
+            {NOTA_DESIGNS.map((d) => (
+              <button key={d.key} type="button" onClick={() => setSettings({ ...settings, nota_design: d.key })}
+                className={`w-full text-left p-3 border-2 rounded-lg transition-colors ${(settings.nota_design || 'classic') === d.key ? 'border-blue-600 bg-blue-50' : 'border-gray-200 hover:border-gray-300'}`}>
+                <div className="font-medium text-sm">{d.label}</div>
+                <div className="text-xs text-gray-500">{d.desc}</div>
+              </button>
+            ))}
+          </div>
+          <button onClick={saveSettings} disabled={saving} className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50">
+            {saving ? 'Menyimpan...' : 'Simpan'}
+          </button>
         </div>
       )}
 
