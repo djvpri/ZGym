@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { useSession } from 'next-auth/react'
 
 const statusColors: Record<string, string> = {
   active: 'bg-green-100 text-green-700',
@@ -10,10 +11,15 @@ const statusColors: Record<string, string> = {
   suspended: 'bg-yellow-100 text-yellow-700',
 }
 
+const JOIN_URL = 'https://zone.zomet.my.id/join/zgym'
+
 export default function MembersPage() {
+  const { data: session } = useSession()
+  const t = session?.user as any
   const [members, setMembers] = useState<any[]>([])
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
+  const [copied, setCopied] = useState(false)
 
   const fetchMembers = () => {
     const params = new URLSearchParams()
@@ -25,6 +31,46 @@ export default function MembersPage() {
 
   return (
     <div className="space-y-4">
+      {/* QR / link gabung member — per tenant */}
+      {t?.joinToken ? (
+        <div className="bg-white rounded-xl shadow-sm border p-4 flex flex-col sm:flex-row gap-4 items-center sm:items-start">
+          <div className="shrink-0">
+            <img
+              src={`https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(`${JOIN_URL}/${t.joinToken}`)}&size=120x120&margin=8`}
+              alt="QR gabung member"
+              width={120}
+              height={120}
+              className="rounded-lg border"
+            />
+          </div>
+          <div className="flex-1 w-full">
+            <div className="flex items-center justify-between gap-2 flex-wrap mb-1">
+              <h2 className="font-semibold text-gray-800">QR Gabung Member</h2>
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(`${JOIN_URL}/${t.joinToken}`)
+                  setCopied(true)
+                  setTimeout(() => setCopied(false), 1500)
+                }}
+                className="text-xs px-3 py-1.5 bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 rounded-lg hover:bg-emerald-500/20 transition">
+                {copied ? '✓ Disalin' : 'Salin Link'}
+              </button>
+            </div>
+            <p className="text-sm text-gray-500 mb-2">
+              Bagikan QR/link ini ke kandidat member — mereka daftar sendiri, langsung masuk sebagai member
+              tenant <span className="font-medium text-gray-700">{t?.tenantName || ''}</span>.
+            </p>
+            <div className="flex items-center gap-2 bg-gray-50 border rounded-lg px-3 py-2">
+              <code className="text-xs text-gray-600 truncate flex-1">{JOIN_URL}/{t.joinToken}</code>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="bg-amber-50 border border-amber-200 text-amber-700 rounded-xl px-4 py-3 text-sm">
+          Tenant ini belum punya token join. Minta admin membuat token join di hub Z One (menu Manage → QR Gabung Member) supaya QR gabung member bisa tampil.
+        </div>
+      )}
+
       <div className="flex flex-col sm:flex-row gap-3 justify-between">
         <input
           type="text"
