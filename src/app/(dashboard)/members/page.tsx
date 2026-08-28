@@ -27,12 +27,16 @@ export default function MembersPage() {
     try {
       setDownloading(true)
       const res = await fetch(url)
+      if (!res.ok) throw new Error('Gagal mengambil kode QR')
       const blob = await res.blob()
       const a = document.createElement('a')
       a.href = URL.createObjectURL(blob)
       a.download = `qr-gabung-${t.joinToken.slice(0, 8)}.png`
+      document.body.appendChild(a)
       a.click()
-      URL.revokeObjectURL(a.href)
+      document.body.removeChild(a)
+      // revoke belakangan — browser perlu waktu utk mulai unduh dr blob URL
+      setTimeout(() => URL.revokeObjectURL(a.href), 2000)
     } finally {
       setDownloading(false)
     }
