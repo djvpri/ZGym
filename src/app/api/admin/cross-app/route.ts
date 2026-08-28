@@ -13,6 +13,18 @@ function checkAuth(req: NextRequest) {
   return token === getCrossAppSecret()
 }
 
+// Sinkronkan user role=member (dari QR join hub) ke tabel Member (bukan User).
+// Attendance.memberId & tab Members memakai Member — lihat schema.prisma.
+// Idempoten: kalau Member dgn (tenantId, email) sudah ada, lewati.
+async function ensureMember(tenantId: string, p: { name: string; email: string }) {
+  const existing = await prisma.member.findFirst({ where: { tenantId, email: p.email } })
+  if (existing) return existing
+  const lastMember = await prisma.member.findFirst({ where: { tenantId }, orderBy: { memberNumber: 'desc' } })
+  const nextNum = lastMember ? parseInt(lastMember.memberNumber.replace('GYM-', '')) + 1 : 1
+  const memberNumber = `GYM-${String(nextNum).padStart(5, '0')}`
+  return prisma.member.create({ data: { tenantId, memberNumber, name: p.name, email: p.email } })
+}
+
 export async function GET(req: NextRequest) {
   if (!checkAuth(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
@@ -139,6 +151,10 @@ export async function POST(req: NextRequest) {
       const user = await prisma.user.create({
         data: { name, email: memberEmail, password: hashed, role: 'member', tenantId: tenant.id },
       })
+
+      // Sinkron ke tabel Member (biar tampil di tab Members & absensi QR jalan;
+      // Attendance.memberId adalah FK ke Member, bukan User — lihat schema).
+      await ensureMember(tenant.id, { name, email: memberEmail })
       return NextResponse.json({ success: true, user, tenantId: tenant.id }, { status: 201 })
     }
 
@@ -152,9 +168,19 @@ export async function POST(req: NextRequest) {
       const tenant = await prisma.tenant.findFirst({ where: { joinToken, isActive: true } })
       if (!tenant) return NextResponse.json({ error: 'QR absensi tidak valid' }, { status: 404 })
 
-      const member = await prisma.user.findFirst({
-        where: { email: emailRaw, tenantId: tenant.id, role: 'member', isActive: true },
+      // Cari di tabel Member DULU (Attendance.memberId adalah FK ke Member).
+      let member = await prisma.member.findFirst({
+        where: { tenantId: tenant.id, email: emailRaw },
       })
+      if (!member) {
+        // Fallback: user role=member dari QR join juga punya row User; sinkron ke Member
+        // bila QR-join dulu dibuat sebelum fitur sinkronisasi ini ada.
+        const u = await prisma.user.findFirst({
+          where: { email: emailRaw, tenantId: tenant.id, role: 'member' },
+        })
+        if (!u) return NextResponse.json({ error: 'Member tidak ditemukan di tenant ini' }, { status: 404 })
+        member = await ensureMember(tenant.id, { name: u.name, email: u.email })
+      }
       if (!member) return NextResponse.json({ error: 'Member tidak ditemukan di tenant ini' }, { status: 404 })
 
       // Cegah dobel check-in hari ini yang masih aktif (belum check-out)
