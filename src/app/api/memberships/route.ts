@@ -43,18 +43,8 @@ export async function POST(req: NextRequest) {
     include: { plan: true },
   })
 
-  // Catat pembayaran otomatis utk membership ini (type=membership, amount=harga plan)
-  await prisma.payment.create({
-    data: {
-      tenantId,
-      memberId: member.id,
-      membershipId: membership.id,
-      type: 'membership',
-      description: `${plan.name} (${membership.id.slice(0, 8)})`,
-      amount: plan.price,
-      method: body.method || 'cash',
-    },
-  })
-
+  // NOTE: pembayaran TIDAK dibuat di sini — aktivasi membership resmi lewat
+  // /payments/new (POST /api/payments dgn membershipId). Memastikan tak dobel
+  // pembayaran saat alur "Aktifkan Membership -> halaman bayar".
   return NextResponse.json({ ...membership, renew: Boolean(existingActive && existingActive.endDate > now) }, { status: 201 })
 }

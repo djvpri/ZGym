@@ -27,8 +27,25 @@ export default function NewPaymentPage() {
   const [receipt, setReceipt] = useState<Receipt | null>(null)
 
   useEffect(() => {
-    fetch('/api/members?status=active').then(r => r.json()).then(setMembers)
-    fetch('/api/membership-plans').then(r => r.json()).then(setPlans)
+    let cancelled = false
+    Promise.all([
+      fetch('/api/members?status=active').then(r => r.json()),
+      fetch('/api/membership-plans').then(r => r.json()),
+    ]).then(([m, pl]) => {
+      if (cancelled) return
+      setMembers(m as any[]); setPlans(pl as any[])
+      // Preselect dari query ?memberId=&planId= (datang dr tombol "Aktifkan Membership")
+      const q = new URLSearchParams(window.location.search)
+      const qm = q.get('memberId') || ''
+      const qp = q.get('planId') || ''
+      const plan = (pl as any[]).find(p => p.id === qp && p.isActive)
+      let next = { ...form }
+      if (m.some((x: any) => x.id === qm)) next.memberId = qm
+      if (plan) next = { ...next, membershipPlanId: qp, amount: Number(plan.price), description: plan.name }
+      setForm(next)
+    })
+    return () => { cancelled = true }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {

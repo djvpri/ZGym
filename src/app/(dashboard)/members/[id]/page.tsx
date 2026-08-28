@@ -21,15 +21,9 @@ export default function MemberDetailPage() {
 
   const handleUpgrade = async () => {
     if (!selectedPlan) return
-    await fetch('/api/memberships', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ memberId: id, planId: selectedPlan }),
-    })
-    const updated = await fetch(`/api/members/${id}`).then(r => r.json())
-    setMember(updated)
-    setShowUpgrade(false)
-    setSelectedPlan('')
+    // Alur aktivasi lewat halaman pembayaran (Opsi A): pilih plan -> pindah ke
+    // /payments/new dengan member+plan ter-preselect, bayar -> membership + payment dibuat.
+    router.push(`/payments/new?memberId=${id}&planId=${selectedPlan}`)
   }
 
   const handleDeleteMembership = async (membershipId: string, planName: string) => {
@@ -74,7 +68,7 @@ export default function MemberDetailPage() {
             ))}
           </select>
           <div className="flex gap-2">
-            <button onClick={handleUpgrade} disabled={!selectedPlan} className="bg-green-600 text-white px-4 py-2 rounded-lg disabled:opacity-50">Konfirmasi</button>
+            <button onClick={handleUpgrade} disabled={!selectedPlan} className="bg-green-600 text-white px-4 py-2 rounded-lg disabled:opacity-50">Lanjut ke Pembayaran</button>
             <button onClick={() => setShowUpgrade(false)} className="px-4 py-2 border rounded-lg">Batal</button>
           </div>
         </div>
