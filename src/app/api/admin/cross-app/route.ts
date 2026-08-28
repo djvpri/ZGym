@@ -140,6 +140,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: true, user, tenantId: tenant.id }, { status: 201 })
     }
 
+    if (action === 'setJoinToken') {
+      if (!data?.tenantId) return NextResponse.json({ error: 'tenantId wajib' }, { status: 400 })
+      const token = randomUUID()
+      await prisma.tenant.update({ where: { id: data.tenantId }, data: { joinToken: token } })
+      return NextResponse.json({ success: true, joinToken: token })
+    }
+
     if (action === 'delete') {
       if (!email) return NextResponse.json({ error: 'email wajib' }, { status: 400 })
       const result = await prisma.user.updateMany({ where: { email }, data: { isActive: false } })
