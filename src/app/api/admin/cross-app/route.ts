@@ -5,6 +5,7 @@ import bcrypt from 'bcryptjs'
 import { randomUUID } from 'crypto'
 
 import { getCrossAppSecret } from '@/lib/secrets'
+import { applyPlanLimits } from '@/lib/plans'
 
 function checkAuth(req: NextRequest) {
   const auth = req.headers.get('authorization')
@@ -52,7 +53,8 @@ export async function POST(req: NextRequest) {
       let slug = base
       for (let i = 0; i < 5; i++) {
         try {
-          const tenant = await prisma.tenant.create({ data: { name, slug, email: ownerEmail, plan: data?.plan || 'free', joinToken: randomUUID() } })
+          const plan = data?.plan || 'free'
+          const tenant = await prisma.tenant.create({ data: { name, slug, email: ownerEmail, plan, ...applyPlanLimits(plan), joinToken: randomUUID() } })
           return NextResponse.json({ success: true, tenant }, { status: 201 })
         } catch (e: any) {
           if (e?.code === 'P2002') { slug = `${base}-${Math.floor(Math.random() * 9999)}`; continue }
@@ -90,7 +92,7 @@ export async function POST(req: NextRequest) {
 
     if (action === 'updatePlan') {
       if (!data?.tenantId || !data?.plan) return NextResponse.json({ error: 'tenantId & plan wajib' }, { status: 400 })
-      await prisma.tenant.update({ where: { id: data.tenantId }, data: { plan: data.plan, planExpires: data.planExpires ? new Date(data.planExpires) : null } })
+      await prisma.tenant.update({ where: { id: data.tenantId }, data: { plan: data.plan, planExpires: data.planExpires ? new Date(data.planExpires) : null, ...applyPlanLimits(data.plan) } })
       return NextResponse.json({ success: true })
     }
 

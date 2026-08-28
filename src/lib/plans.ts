@@ -10,3 +10,10 @@ export type PlanName = keyof typeof PLANS
 export function getPlanLimits(plan: string) {
   return PLANS[plan as PlanName] || PLANS.free
 }
+
+// Return objek kolom limit Tenant utk di-set (create/update) dari nama plan.
+// Satu sumber kebenaran: PlanName -> limits kolom tenant.
+export function applyPlanLimits(plan: string) {
+  const l = getPlanLimits(plan)
+  return { maxMembers: l.maxMembers, maxInstructors: l.maxInstructors, maxClasses: l.maxClasses }
+}
