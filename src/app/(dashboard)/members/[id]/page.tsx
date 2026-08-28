@@ -32,6 +32,13 @@ export default function MemberDetailPage() {
     setSelectedPlan('')
   }
 
+  const handleDeleteMembership = async (membershipId: string, planName: string) => {
+    if (!confirm(`Hapus membership "${planName}"? Status/expiry member akan disesuaikan.`)) return
+    await fetch(`/api/memberships/${membershipId}`, { method: 'DELETE' })
+    const updated = await fetch(`/api/members/${id}`).then(r => r.json())
+    setMember(updated)
+  }
+
   const handleDelete = async () => {
     if (!confirm('Yakin hapus member ini?')) return
     await fetch(`/api/members/${id}`, { method: 'DELETE' })
@@ -93,9 +100,20 @@ export default function MemberDetailPage() {
           <div className="space-y-3">
             {member.memberships?.map((m: any) => (
               <div key={m.id} className="p-3 bg-gray-50 rounded-lg">
-                <p className="font-medium text-sm">{m.plan.name}</p>
-                <p className="text-xs text-gray-500">{new Date(m.startDate).toLocaleDateString('id-ID')} — {new Date(m.endDate).toLocaleDateString('id-ID')}</p>
-                <span className={`text-xs px-2 py-0.5 rounded-full ${m.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>{m.status}</span>
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <p className="font-medium text-sm">{m.plan.name}</p>
+                    <p className="text-xs text-gray-500">{new Date(m.startDate).toLocaleDateString('id-ID')} — {new Date(m.endDate).toLocaleDateString('id-ID')}</p>
+                    <span className={`text-xs px-2 py-0.5 rounded-full ${m.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>{m.status}</span>
+                  </div>
+                  <button
+                    onClick={() => handleDeleteMembership(m.id, m.plan.name)}
+                    title="Hapus membership"
+                    className="text-red-500 hover:text-red-700 hover:bg-red-50 p-1.5 rounded-lg transition-colors"
+                  >
+                    <i className="bi bi-trash" />
+                  </button>
+                </div>
               </div>
             ))}
             {(!member.memberships || member.memberships.length === 0) && <p className="text-gray-400 text-sm">Belum ada membership</p>}
