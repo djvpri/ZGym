@@ -10,6 +10,8 @@ export default function SettingsPage() {
   const [newPlan, setNewPlan] = useState({ name: '', description: '', duration: 30, price: 0 })
   const [instructors, setInstructors] = useState<any[]>([])
   const [newInstructor, setNewInstructor] = useState({ name: '', specialty: '', phone: '', email: '' })
+  const [editPlan, setEditPlan] = useState<any>(null)
+  const [editInstructor, setEditInstructor] = useState<any>(null)
   const [saving, setSaving] = useState(false)
   const [tab, setTab] = useState<'gym' | 'plans' | 'instructors'>('gym')
 
@@ -44,6 +46,34 @@ export default function SettingsPage() {
       setInstructors([...instructors, inst])
       setNewInstructor({ name: '', specialty: '', phone: '', email: '' })
     }
+  }
+
+  const savePlan = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!editPlan) return
+    const res = await fetch('/api/membership-plans', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(editPlan) })
+    if (res.ok) {
+      const updated = await res.json()
+      setPlans(plans.map(p => (p.id === updated.id ? updated : p)))
+      setEditPlan(null)
+    }
+  }
+
+  const saveInstructor = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!editInstructor) return
+    const res = await fetch('/api/instructors', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(editInstructor) })
+    if (res.ok) {
+      const updated = await res.json()
+      setInstructors(instructors.map(i => (i.id === updated.id ? updated : i)))
+      setEditInstructor(null)
+    }
+  }
+
+  const deleteInstructor = async (inst: any) => {
+    if (!confirm(`Hapus instruktur ${inst.name}?`)) return
+    await fetch(`/api/instructors?id=${inst.id}`, { method: 'DELETE' })
+    setInstructors(instructors.filter(i => i.id !== inst.id))
   }
 
   return (
@@ -120,6 +150,7 @@ export default function SettingsPage() {
                   <th className="px-4 py-2 font-medium">Durasi</th>
                   <th className="px-4 py-2 font-medium">Harga</th>
                   <th className="px-4 py-2 font-medium">Status</th>
+                  <th className="px-4 py-2 font-medium"></th>
                 </tr>
               </thead>
               <tbody className="divide-y">
@@ -132,6 +163,10 @@ export default function SettingsPage() {
                       <span className={`px-2 py-1 rounded-full text-xs ${p.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
                         {p.isActive ? 'Aktif' : 'Nonaktif'}
                       </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <button onClick={() => setEditPlan({ ...p })}
+                        className="px-3 py-1 text-sm border rounded-lg hover:bg-gray-50">Edit</button>
                     </td>
                   </tr>
                 ))}
@@ -164,14 +199,102 @@ export default function SettingsPage() {
                   <div className="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center font-bold text-lg">
                     {i.name.charAt(0)}
                   </div>
-                  <div>
+                  <div className="flex-1 min-w-0">
                     <h4 className="font-semibold">{i.name}</h4>
                     <p className="text-sm text-gray-500">{i.specialty || '-'}</p>
                     <p className="text-xs text-gray-400">{i.phone || '-'}</p>
                   </div>
                 </div>
+                <div className="flex gap-2 mt-3">
+                  <button onClick={() => setEditInstructor({ ...i })}
+                    className="px-3 py-1 text-sm border rounded-lg hover:bg-gray-50">Edit</button>
+                  <button onClick={() => deleteInstructor(i)}
+                    className="px-3 py-1 text-sm border border-red-200 text-red-600 rounded-lg hover:bg-red-50">Hapus</button>
+                </div>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* Modal Edit Paket */}
+      {editPlan && (
+        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 p-4" onClick={() => setEditPlan(null)}>
+          <div className="bg-white rounded-xl p-6 shadow-lg w-full max-w-md" onClick={e => e.stopPropagation()}>
+            <h3 className="font-semibold mb-4">Edit Paket</h3>
+            <form onSubmit={savePlan} className="space-y-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Nama</label>
+                <input value={editPlan.name} onChange={(e) => setEditPlan({ ...editPlan, name: e.target.value })}
+                  className="w-full px-3 py-2 border rounded-lg" required />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Deskripsi</label>
+                <input value={editPlan.description || ''} onChange={(e) => setEditPlan({ ...editPlan, description: e.target.value })}
+                  className="w-full px-3 py-2 border rounded-lg" placeholder="Opsional" />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Durasi (hari)</label>
+                  <input type="number" value={editPlan.duration ?? ''} onChange={(e) => setEditPlan({ ...editPlan, duration: Number(e.target.value) })}
+                    className="w-full px-3 py-2 border rounded-lg" required />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Harga (Rp)</label>
+                  <input type="number" value={editPlan.price ?? ''} onChange={(e) => setEditPlan({ ...editPlan, price: Number(e.target.value) })}
+                    className="w-full px-3 py-2 border rounded-lg" required />
+                </div>
+              </div>
+              <label className="flex items-center gap-2 text-sm">
+                <input type="checkbox" checked={!!editPlan.isActive} onChange={(e) => setEditPlan({ ...editPlan, isActive: e.target.checked })} />
+                Aktif
+              </label>
+              <div className="flex gap-2 pt-2">
+                <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">Simpan</button>
+                <button type="button" onClick={() => setEditPlan(null)} className="px-4 py-2 border rounded-lg">Batal</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Edit Instruktur */}
+      {editInstructor && (
+        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 p-4" onClick={() => setEditInstructor(null)}>
+          <div className="bg-white rounded-xl p-6 shadow-lg w-full max-w-md" onClick={e => e.stopPropagation()}>
+            <h3 className="font-semibold mb-4">Edit Instruktur</h3>
+            <form onSubmit={saveInstructor} className="space-y-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Nama</label>
+                <input value={editInstructor.name} onChange={(e) => setEditInstructor({ ...editInstructor, name: e.target.value })}
+                  className="w-full px-3 py-2 border rounded-lg" required />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Spesialisasi</label>
+                <input value={editInstructor.specialty || ''} onChange={(e) => setEditInstructor({ ...editInstructor, specialty: e.target.value })}
+                  className="w-full px-3 py-2 border rounded-lg" />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                  <input value={editInstructor.email || ''} onChange={(e) => setEditInstructor({ ...editInstructor, email: e.target.value })}
+                    className="w-full px-3 py-2 border rounded-lg" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Telepon</label>
+                  <input value={editInstructor.phone || ''} onChange={(e) => setEditInstructor({ ...editInstructor, phone: e.target.value })}
+                    className="w-full px-3 py-2 border rounded-lg" />
+                </div>
+              </div>
+              <label className="flex items-center gap-2 text-sm">
+                <input type="checkbox" checked={!!editInstructor.isActive} onChange={(e) => setEditInstructor({ ...editInstructor, isActive: e.target.checked })} />
+                Aktif
+              </label>
+              <div className="flex gap-2 pt-2">
+                <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">Simpan</button>
+                <button type="button" onClick={() => setEditInstructor(null)} className="px-4 py-2 border rounded-lg">Batal</button>
+              </div>
+            </form>
           </div>
         </div>
       )}
