@@ -14,6 +14,8 @@ const menuItems = [
   { href: '/pt',         label: 'Personal Training',  icon: 'bi-person-badge' },
   { href: '/payments',   label: 'Pembayaran',         icon: 'bi-cash-coin' },
   { href: '/reports',    label: 'Laporan',            icon: 'bi-bar-chart-line' },
+  { href: '/ai',         label: 'AI',                 icon: 'bi-stars' },
+  { href: '/lisensi',    label: 'Lisensi',            icon: 'bi-card-checklist' },
   { href: '/settings',   label: 'Pengaturan',         icon: 'bi-gear' },
 ]
 

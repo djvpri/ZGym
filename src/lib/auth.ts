@@ -100,6 +100,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             token.tenantSlug = dbUser.tenant.slug
             token.tenantPlan = dbUser.tenant.plan
             token.joinToken = dbUser.tenant.joinToken
+            token.tenantPlanExpires = dbUser.tenant.planExpires
+              ? (dbUser.tenant.planExpires as Date).toISOString()
+              : null
             token.tenantMaxMembers = dbUser.tenant.maxMembers
             token.tenantMaxInstructors = dbUser.tenant.maxInstructors
             token.tenantMaxClasses = dbUser.tenant.maxClasses
@@ -118,6 +121,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           session.user.tenantName = token.tenantName as string
           session.user.tenantSlug = token.tenantSlug as string
           session.user.tenantPlan = token.tenantPlan as string
+          session.user.tenantPlanExpires = token.tenantPlanExpires as string | null
           session.user.tenantMaxMembers = token.tenantMaxMembers as number
           session.user.tenantMaxInstructors = token.tenantMaxInstructors as number
           session.user.tenantMaxClasses = token.tenantMaxClasses as number

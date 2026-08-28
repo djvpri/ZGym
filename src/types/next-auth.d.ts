@@ -9,6 +9,7 @@ declare module 'next-auth' {
       tenantName?: string
       tenantSlug?: string
       tenantPlan?: string
+      tenantPlanExpires?: string | null
       tenantMaxMembers?: number
       tenantMaxInstructors?: number
       tenantMaxClasses?: number
@@ -24,6 +25,7 @@ declare module 'next-auth/jwt' {
     tenantName?: string
     tenantSlug?: string
     tenantPlan?: string
+    tenantPlanExpires?: string | null
     tenantMaxMembers?: number
     tenantMaxInstructors?: number
     tenantMaxClasses?: number
