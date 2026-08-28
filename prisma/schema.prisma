@@ -25,6 +25,11 @@ model Tenant {
   isDemo         Boolean   @default(false)
   demoExpiresAt  DateTime?
 
+  // Token unik utk self-register member via QR/link hub ZOne. Dihasilkan saat
+  // bikin tenant (createTenant/createMember) & utk tenant existing via seed.
+  // Link join: zone.zomet.my.id/join/<appSlug>/<joinToken>
+  joinToken    String?   @unique
+
   users       User[]
   members     Member[]
   instructors Instructor[]

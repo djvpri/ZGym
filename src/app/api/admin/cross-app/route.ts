@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic"
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
+import { randomUUID } from 'crypto'
 
 import { getCrossAppSecret } from '@/lib/secrets'
 
@@ -16,7 +17,7 @@ export async function GET(req: NextRequest) {
 
   try {
     const tenants = await prisma.tenant.findMany({
-      select: { id: true, name: true, plan: true, isActive: true, planExpires: true, createdAt: true },
+      select: { id: true, name: true, plan: true, isActive: true, planExpires: true, createdAt: true, joinToken: true },
       orderBy: { createdAt: 'desc' },
     })
 
@@ -26,7 +27,7 @@ export async function GET(req: NextRequest) {
     })
 
     return NextResponse.json({
-      tenants: tenants.map(t => ({ id: t.id, name: t.name, plan: t.plan || 'free', active: t.isActive, expires_at: t.planExpires })),
+      tenants: tenants.map(t => ({ id: t.id, name: t.name, plan: t.plan || 'free', active: t.isActive, expires_at: t.planExpires, join_token: t.joinToken })),
       users: users.map(u => ({ id: u.id, name: u.name, email: u.email, role: u.role, active: u.isActive, tenantId: u.tenantId })),
     })
   } catch (error) {
@@ -51,7 +52,7 @@ export async function POST(req: NextRequest) {
       let slug = base
       for (let i = 0; i < 5; i++) {
         try {
-          const tenant = await prisma.tenant.create({ data: { name, slug, email: ownerEmail, plan: data?.plan || 'free' } })
+          const tenant = await prisma.tenant.create({ data: { name, slug, email: ownerEmail, plan: data?.plan || 'free', joinToken: randomUUID() } })
           return NextResponse.json({ success: true, tenant }, { status: 201 })
         } catch (e: any) {
           if (e?.code === 'P2002') { slug = `${base}-${Math.floor(Math.random() * 9999)}`; continue }
@@ -111,6 +112,32 @@ export async function POST(req: NextRequest) {
       const hashed = await bcrypt.hash(data.password, 10)
       const user = await prisma.user.create({ data: { name: data.name, email: data.email, password: hashed, role: data.role || 'member', tenantId } })
       return NextResponse.json({ success: true, user }, { status: 201 })
+    }
+
+    if (action === 'createMember') {
+      // Self-register member via hub ZOne (link/QR join). data = { joinToken, name, email }
+      const joinToken = String(data?.joinToken || '')
+      const name = String(data?.name || '').trim()
+      const memberEmail = String(data?.email || email || '').trim().toLowerCase()
+      if (!joinToken || !name || !memberEmail) return NextResponse.json({ error: 'joinToken, name, email wajib' }, { status: 400 })
+
+      const tenant = await prisma.tenant.findUnique({ where: { joinToken } })
+      if (!tenant) return NextResponse.json({ error: 'Tenant tidak ditemukan (token invalid)' }, { status: 404 })
+      if (!tenant.isActive) return NextResponse.json({ error: 'Tenant tidak aktif' }, { status: 403 })
+
+      const existing = await prisma.user.findFirst({ where: { tenantId: tenant.id, email: memberEmail } })
+      if (existing) {
+        // Sudah member di tenant itu -> 200 idempoten (bukan error); hub arahkan SSO.
+        if (!existing.isActive) await prisma.user.update({ where: { id: existing.id }, data: { isActive: true } })
+        return NextResponse.json({ success: true, alreadyMember: true, user: existing, tenantId: tenant.id })
+      }
+
+      // Login member via SSO hub, jadi password lokal acak tak terpakai.
+      const hashed = await bcrypt.hash(randomUUID(), 10)
+      const user = await prisma.user.create({
+        data: { name, email: memberEmail, password: hashed, role: 'member', tenantId: tenant.id },
+      })
+      return NextResponse.json({ success: true, user, tenantId: tenant.id }, { status: 201 })
     }
 
     if (action === 'delete') {
