@@ -32,21 +32,35 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Pembayaran membership harus milik member.' }, { status: 422 })
   }
 
-  const payment = await prisma.payment.create({
-    data: {
-      tenantId,
-      memberId: body.memberId || null,
-      guestName: body.guestName || null,
-      membershipId: body.membershipId || null,
-      ptSessionId: body.ptSessionId || null,
-      type: body.type,
-      description: body.description,
-      amount: body.amount,
-      method: body.method || 'cash',
-      status: body.status || 'paid',
-      notes: body.notes || null,
-    },
-    include: { member: true },
+  // Penjualan produk: pastikan ada & stok cukup, lalu kurangi stok (atomik).
+  let product = null
+  if (body.type === 'product' && body.productId) {
+    product = await prisma.product.findFirst({ where: { id: body.productId, tenantId } })
+    if (!product) return NextResponse.json({ error: 'Produk tidak ditemukan.' }, { status: 404 })
+    if (Number(product.stock) <= 0) return NextResponse.json({ error: `Stok produk "${product.name}" habis.` }, { status: 422 })
+  }
+
+  const payment = await prisma.$transaction(async (tx) => {
+    if (product) {
+      await tx.product.update({ where: { id: product.id }, data: { stock: { decrement: 1 } } })
+    }
+    return tx.payment.create({
+      data: {
+        tenantId,
+        memberId: body.memberId || null,
+        guestName: body.guestName || null,
+        membershipId: body.membershipId || null,
+        ptSessionId: body.ptSessionId || null,
+        productId: product ? product.id : null,
+        type: body.type,
+        description: body.description || product?.name || '',
+        amount: body.amount,
+        method: body.method || 'cash',
+        status: body.status || 'paid',
+        notes: body.notes || null,
+      },
+      include: { member: true, product: true },
+    })
   })
   return NextResponse.json(payment, { status: 201 })
 }

@@ -13,6 +13,7 @@ const menuItems = [
   { href: '/attendance', label: 'Absensi',            icon: 'bi-clipboard-check' },
   { href: '/pt',         label: 'Personal Training',  icon: 'bi-person-badge' },
   { href: '/payments',   label: 'Pembayaran',         icon: 'bi-cash-coin' },
+  { href: '/products',   label: 'Produk',             icon: 'bi-box-seam' },
   { href: '/reports',    label: 'Laporan',            icon: 'bi-bar-chart-line' },
   { href: '/ai',         label: 'AI',                 icon: 'bi-stars' },
   { href: '/lisensi',    label: 'Lisensi',            icon: 'bi-card-checklist' },

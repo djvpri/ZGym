@@ -246,6 +246,7 @@ model Payment {
   guestName    String?
   membershipId String?
   ptSessionId  String?
+  productId    String?
   type         String // membership, pt_session, product, other
   description  String
   amount       Decimal  @db.Decimal(12, 2)
@@ -258,6 +259,7 @@ model Payment {
   member     Member?     @relation(fields: [memberId], references: [id], onDelete: Cascade)
   membership Membership? @relation(fields: [membershipId], references: [id])
   ptSession  PtSession?  @relation(fields: [ptSessionId], references: [id])
+  product    Product?    @relation(fields: [productId], references: [id])
 
   createdAt DateTime @default(now())
 }
@@ -275,10 +277,11 @@ model Product {
 
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
+  payments Payment[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
-
 // ─── USERS (admin/staff) ──────────────────────────────
 model User {
   id        String   @id @default(cuid())

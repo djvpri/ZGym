@@ -24,13 +24,14 @@ export default function NewPaymentPage() {
   const router = useRouter()
   const [members, setMembers] = useState<any[]>([])
   const [plans, setPlans] = useState<any[]>([])
-  const [form, setForm] = useState({ memberId: '', type: 'membership', description: '', amount: 0, method: 'cash', notes: '', membershipPlanId: '', guestName: '' })
+  const [form, setForm] = useState({ memberId: '', type: 'membership', description: '', amount: 0, method: 'cash', notes: '', membershipPlanId: '', guestName: '', productId: '' })
   const [payFor, setPayFor] = useState<'member' | 'guest'>('member')
   const [loading, setLoading] = useState(false)
   const [receipt, setReceipt] = useState<Receipt | null>(null)
   const [notaDesign, setNotaDesign] = useState<string>('classic')
   const [notaFooter, setNotaFooter] = useState('')
   const [daypassCfg, setDaypassCfg] = useState<DaypassConfig>(DEFAULT_DAYPASS)
+  const [products, setProducts] = useState<any[]>([])
 
   useEffect(() => {
     fetch('/api/settings').then(r => r.json()).then(s => {
@@ -52,9 +53,10 @@ export default function NewPaymentPage() {
     Promise.all([
       fetch('/api/members?status=active').then(r => r.json()),
       fetch('/api/membership-plans').then(r => r.json()),
-    ]).then(([m, pl]) => {
+      fetch('/api/products').then(r => r.json()),
+    ]).then(([m, pl, pr]) => {
       if (cancelled) return
-      setMembers(m as any[]); setPlans(pl as any[])
+      setMembers(m as any[]); setPlans(pl as any[]); setProducts(pr as any[])
       // Preselect dari query ?memberId=&planId= (datang dr tombol "Aktifkan Membership")
       const q = new URLSearchParams(window.location.search)
       const qm = q.get('memberId') || ''
@@ -102,7 +104,7 @@ export default function NewPaymentPage() {
     await fetch('/api/payments', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...form, memberId: isGuest ? '' : form.memberId, guestName: isGuest ? form.guestName : '', membershipId, amount: Number(form.amount) }),
+      body: JSON.stringify({ ...form, memberId: isGuest ? '' : form.memberId, guestName: isGuest ? form.guestName : '', membershipId, productId: form.type === 'product' ? form.productId : '', amount: Number(form.amount) }),
     })
 
     setLoading(false)
@@ -178,6 +180,20 @@ export default function NewPaymentPage() {
               <option value="other">Lainnya</option>
             </select>
           </div>
+          {form.type === 'product' && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Pilih Produk</label>
+              <select value={form.productId} onChange={(e) => {
+                const pid = e.target.value
+                const prod = products.find(p => p.id === pid)
+                setForm({ ...form, productId: pid, description: prod ? prod.name : '', amount: prod ? Number(prod.price) : form.amount })
+              }} className="w-full px-3 py-2 border rounded-lg" required>
+                <option value="">Pilih produk...</option>
+                {products.map((p) => <option key={p.id} value={p.id} disabled={p.stock <= 0}>{p.name} — {p.stock <= 0 ? 'Stok habis' : 'Rp ' + Number(p.price).toLocaleString('id-ID') + ' (stok ' + p.stock + ')'}</option>)}
+              </select>
+              {products.length === 0 && <p className="text-xs text-gray-400 mt-1">Belum ada produk. <a href="/products" className="text-blue-600 underline">Kelola produk</a>.</p>}
+            </div>
+          )}
           {payFor === 'member' && form.type === 'membership' && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Paket Membership</label>
