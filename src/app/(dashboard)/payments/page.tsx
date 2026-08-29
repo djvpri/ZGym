@@ -59,16 +59,16 @@ export default function PaymentsPage() {
   return (
     <>
       <style>{`
-        @page { size: 40mm auto; margin: 0; }
+        @page { size: 40mm auto; margin: 2mm; }
         @media print {
           /* Hapus header/footer browser (URL "http..") & sembunyikan semua UI.
              Nota sudah dipindahkan ke <body> (handlePrint), jadi hanya nota yg tersisa. */
           body > *:not(#nota-payment-list) { display: none !important; }
           #nota-payment-list {
             display: block !important;
-            width: 40mm !important; max-width: none !important;
+            width: 34mm !important; max-width: none !important;
             height: auto !important; margin: 0 auto !important;
-            padding: 3mm 3mm !important; background: white !important;
+            padding: 2mm 2mm !important; background: white !important;
             box-shadow: none !important; border-radius: 0 !important;
             font-size: 9px !important; line-height: 1.35 !important;
           }
