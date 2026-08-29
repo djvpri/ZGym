@@ -70,7 +70,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
 
         <nav className="px-4 space-y-0.5">
-          {(user?.role === 'staff'
+          {(String(user?.role).toLowerCase() === 'staff'
             ? menuItems.filter(m => m.kasir)
             : menuItems).map((item) => {
             const isActive = pathname === item.href

@@ -50,7 +50,7 @@ export async function middleware(request: NextRequest) {
         secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET || '',
       })
       const role = (token as any)?.role
-      if (role === 'staff' && !KASIR_BOLEH(path)) {
+      if (String(role).toLowerCase() === 'staff' && !KASIR_BOLEH(path)) {
         return NextResponse.redirect(new URL('/payments', request.url))
       }
     } catch {

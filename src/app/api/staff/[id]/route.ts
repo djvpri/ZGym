@@ -10,7 +10,8 @@ async function canAdmin(tenantId: string): Promise<boolean> {
   const session = await auth()
   const cu = (session?.user as any) || {}
   if (cu.tenantId !== tenantId) return false
-  return cu.role === 'owner' || cu.role === 'admin'
+  // terima campuran casing (data lama pakai 'ADMIN'/'admin', 'STAFF'/'staff')
+  return ['owner', 'admin'].includes(String(cu.role).toLowerCase())
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
@@ -19,7 +20,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   if (!tenantId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   if (!(await canAdmin(tenantId))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
-  const target = await prisma.user.findFirst({ where: { id: params.id, tenantId, role: { in: ['admin', 'staff'] } } })
+  const target = await prisma.user.findFirst({ where: { id: params.id, tenantId, role: { notIn: ['member'] } } })
   if (!target) return NextResponse.json({ error: 'User tidak ditemukan' }, { status: 404 })
   if (target.id === (session?.user as any)?.id) {
     return NextResponse.json({ error: 'Tidak bisa ubah akun sendiri di sini' }, { status: 400 })
@@ -28,7 +29,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   const body = await req.json()
   const data: any = {}
   if (typeof body.role === 'string') {
-    const role = body.role
+    const role = String(body.role).toLowerCase()
     if (!['admin', 'staff'].includes(role)) return NextResponse.json({ error: 'Role harus admin atau staff' }, { status: 400 })
     data.role = role
   }

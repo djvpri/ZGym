@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
   if (!tenantId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const staff = await prisma.user.findMany({
-    where: { tenantId, role: { in: ['admin', 'staff'] } },
+    where: { tenantId, role: { notIn: ['member'] } },
     select: { id: true, name: true, email: true, role: true, isActive: true, createdAt: true },
     orderBy: { createdAt: 'asc' },
   })

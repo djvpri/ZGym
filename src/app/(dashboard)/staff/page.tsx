@@ -35,7 +35,8 @@ export default function StaffPage() {
   }
 
   const ubahRole = (u: Staff) => {
-    const next = u.role === 'admin' ? 'staff' : 'admin'
+    const isAdmin = String(u.role).toLowerCase() === 'admin'
+    const next = isAdmin ? 'staff' : 'admin'
     patch(u, { role: next }, `Ubah role ${u.name} menjadi ${next === 'admin' ? 'Admin' : 'Kasir'}?`)
   }
   const toggleAktif = (u: Staff) =>
@@ -75,17 +76,19 @@ export default function StaffPage() {
         </div>
       ) : (
         <div className="space-y-2">
-          {staff.map(u => (
+          {staff.map(u => {
+            const isAdmin = String(u.role).toLowerCase() === 'admin'
+            return (
             <div key={u.id} className={`flex items-center gap-3 bg-white rounded-2xl border border-gray-100 px-4 py-3.5 ${!u.isActive ? 'opacity-50' : ''}`}>
-              <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${u.role === 'admin' ? 'bg-amber-100' : 'bg-indigo-100'}`}>
-                <span className={`text-sm font-bold ${u.role === 'admin' ? 'text-amber-600' : 'text-indigo-600'}`}>{u.name[0]?.toUpperCase()}</span>
+              <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${isAdmin ? 'bg-amber-100' : 'bg-indigo-100'}`}>
+                <span className={`text-sm font-bold ${isAdmin ? 'text-amber-600' : 'text-indigo-600'}`}>{u.name[0]?.toUpperCase()}</span>
               </div>
               <div className="flex-1 min-w-0">
                 <div className="text-sm font-medium text-gray-800 truncate">{u.name}</div>
                 <div className="text-xs text-gray-400 truncate">{u.email}{!u.isActive && ' · nonaktif'}</div>
               </div>
-              <span className={`text-xs font-semibold px-2 py-0.5 rounded-full shrink-0 ${u.role === 'admin' ? 'bg-amber-50 text-amber-600' : 'bg-blue-50 text-blue-600'}`}>
-                {u.role === 'admin' ? 'Admin' : 'Kasir'}
+              <span className={`text-xs font-semibold px-2 py-0.5 rounded-full shrink-0 ${isAdmin ? 'bg-amber-50 text-amber-600' : 'bg-blue-50 text-blue-600'}`}>
+                {isAdmin ? 'Admin' : 'Kasir'}
               </span>
               <div className="flex items-center gap-1 shrink-0">
                 <button onClick={() => gantiNama(u)} title="Ganti nama" className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors">
@@ -94,7 +97,7 @@ export default function StaffPage() {
                 <button onClick={() => setPassword(u)} title="Set/reset password" className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors">
                   <i className="bi bi-key" />
                 </button>
-                <button onClick={() => ubahRole(u)} title={u.role === 'admin' ? 'Turunkan jadi Kasir' : 'Jadikan Admin'} className="p-1.5 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors">
+                <button onClick={() => ubahRole(u)} title={isAdmin ? 'Turunkan jadi Kasir' : 'Jadikan Admin'} className="p-1.5 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors">
                   <i className="bi bi-shield-lock" />
                 </button>
                 <button onClick={() => toggleAktif(u)} title={u.isActive ? 'Nonaktifkan' : 'Aktifkan'} className={`px-2 py-1 rounded-lg text-xs font-medium transition-colors ${u.isActive ? 'text-gray-400 hover:text-red-500 hover:bg-red-50' : 'text-green-600 hover:bg-green-50'}`}>
@@ -102,7 +105,8 @@ export default function StaffPage() {
                 </button>
               </div>
             </div>
-          ))}
+            )
+          })}
         </div>
       )}
     </div>
