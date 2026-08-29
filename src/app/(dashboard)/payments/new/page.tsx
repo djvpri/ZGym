@@ -31,6 +31,7 @@ export default function NewPaymentPage() {
   const [receipt, setReceipt] = useState<Receipt | null>(null)
   const [notaDesign, setNotaDesign] = useState<string>('classic')
   const [notaFooter, setNotaFooter] = useState('')
+  const [notaPaper, setNotaPaper] = useState(40)
   const [notaTenant, setNotaTenant] = useState({ name: 'Gym', address: '', phone: '' })
   const [printerDefault, setPrinterDefault] = useState('')
   const [daypassCfg, setDaypassCfg] = useState<DaypassConfig>(DEFAULT_DAYPASS)
@@ -73,6 +74,7 @@ export default function NewPaymentPage() {
     fetch('/api/settings').then(r => r.json()).then(s => {
       if (s && isNotaDesign(s.nota_design)) setNotaDesign(s.nota_design)
       setNotaFooter(s.nota_footer || '')
+      setNotaPaper([40, 58, 80].includes(Number(s.nota_paper)) ? Number(s.nota_paper) : 40)
       setPrinterDefault(s.printer_default || '')
       setNotaTenant({ name: s.gym_name || s.tenant_name || 'Gym', address: s.gym_address || '', phone: s.gym_phone || s.tenant_phone || '' })
       if (s?.daypass) setDaypassCfg(parseDaypass(s.daypass))
@@ -193,7 +195,7 @@ export default function NewPaymentPage() {
           total: formatRp(Number(r.amount)),
           footer: notaFooter || 'Terima kasih atas pembayaran Anda!',
         }
-        const escpos = buildEscPos(nota)
+        const escpos = buildEscPos(nota, notaPaper)
         const res = await kirimCetakEscPos(escpos, printer)
         setPrintStatus(res)
         setTimeout(() => setPrintStatus(''), 4000)
@@ -211,7 +213,7 @@ export default function NewPaymentPage() {
   return (
     <>
       <style>{`
-        @page { size: 40mm auto; margin: 2mm; }
+        @page { size: ${notaPaper}mm auto; margin: 2mm; }
         @media print {
           /* Hapus header/footer browser (URL "http..") & sembunyikan semua UI.
              Nota sudah dipindahkan ke <body> (handlePrint), jadi hanya nota yg tersisa. */

@@ -89,32 +89,36 @@ export async function daftarPrinterTauri(): Promise<string[]> {
   }
 }
 
-// --- ESC/POS primitive (pola z1-kasir) ---
+// Konstanta lebar kolom per ukuran kertas thermal (bisa dioverride via buildEscPos).
+// 32 kolom ≈ 58mm/40mm; 42 kolom ≈ 80mm. Tambahan utk 80mm pakai 42 kolom.
+const KOLOM = (mm: number): number => (mm >= 80 ? 42 : 32)
+
 const esc = (s: unknown) => String(s ?? '')
 
-function wrapCenter(B: string[], s: string) {
-  while (s.length > 32) {
-    B.push('\x1ba\x01' + s.slice(0, 32) + '\n')
-    s = s.slice(32)
+const wrapCenter = (B: string[], s: string, cols: number) => {
+  while (s.length > cols) {
+    B.push('\x1ba\x01' + s.slice(0, cols) + '\n')
+    s = s.slice(cols)
   }
   if (s) B.push('\x1ba\x01' + s + '\n')
 }
 
-/** Bangun string byte ESC/POS dari struktur nota ZGym (32 kolom = 40mm thermal). */
-export function buildEscPos(n: NotaEscPos): string {
+/** Bangun string byte ESC/POS dari struktur nota ZGym. `mm` = lebar kertas. */
+export function buildEscPos(n: NotaEscPos, mm = 40): string {
+  const cols = KOLOM(mm)
   const B: string[] = buatStringBytes()
   const line = (s: string) => B.push(s + '\n')
   const bold = (s: string) => B.push('\x1bE\x01' + s + '\x1bE\x00\n')
   const center = (s: string) => B.push('\x1ba\x01' + s + '\n')
   const left = (s: string) => B.push('\x1ba\x00' + s + '\n')
   const totalLine = (a: string, b: string) =>
-    left(a + ' '.repeat(Math.max(1, 32 - a.length - b.length)) + b)
-  const divider = '--------------------------------'
+    left(a + ' '.repeat(Math.max(1, cols - a.length - b.length)) + b)
+  const divider = '-'.repeat(cols)
 
   B.push('\x1b@') // init printer
   center('\x1bE\x01' + esc(n.tenant.name || 'Gym') + '\x1bE\x00')
-  if (n.tenant.address) wrapCenter(B, esc(n.tenant.address))
-  if (n.tenant.phone) wrapCenter(B, 'Telp: ' + esc(n.tenant.phone))
+  if (n.tenant.address) wrapCenter(B, esc(n.tenant.address), cols)
+  if (n.tenant.phone) wrapCenter(B, 'Telp: ' + esc(n.tenant.phone), cols)
   line(divider)
 
   totalLine('Tanggal', esc(n.tanggal) + (n.jam ? ' ' + esc(n.jam) : ''))
@@ -126,10 +130,10 @@ export function buildEscPos(n: NotaEscPos): string {
   if (n.status) totalLine('Status', esc(n.status))
   line(divider)
 
-  B.push('\x1bE\x01\x1ba\x00' + 'TOTAL' + ' '.repeat(Math.max(1, 32 - 5 - esc(n.total).length)) + esc(n.total) + '\x1bE\x00')
+  B.push('\x1bE\x01\x1ba\x00' + 'TOTAL' + ' '.repeat(Math.max(1, cols - 5 - esc(n.total).length)) + esc(n.total) + '\x1bE\x00')
   line(divider)
 
-  if (n.footer) wrapCenter(B, esc(n.footer))
+  if (n.footer) wrapCenter(B, esc(n.footer), cols)
   center('*** TERIMA KASIH ***')
   B.push('\x1ba\x00\n\n\n')
   B.push('\x1dV\x42') // cut partial

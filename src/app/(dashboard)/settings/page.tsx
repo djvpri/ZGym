@@ -295,6 +295,19 @@ export default function SettingsPage() {
             <p className="text-xs text-gray-400">Tiap baris = satu baris di nota. Kosongkan utk memakai teks default.</p>
           </div>
 
+          <div className="space-y-2">
+            <p className="text-xs font-medium text-gray-500">Ukuran Kertas Nota</p>
+            <select
+              value={String(settings.nota_paper || 40)}
+              onChange={(e) => setSettings({ ...settings, nota_paper: e.target.value })}
+              className="w-full px-3 py-2 border rounded-lg bg-white">
+              <option value="40">40mm — thermal sempit (32 kolom)</option>
+              <option value="58">58mm — ukuran umum (32 kolom)</option>
+              <option value="80">80mm — thermal lebar (42 kolom)</option>
+            </select>
+            <p className="text-xs text-gray-400">Menentukan lebar tampilan & kolom nota saat dicetak (ESC/POS & dialog cetak browser).</p>
+          </div>
+
           {/* Pilih printer utk cetak thermal (hanya relevan di ZXgym desktop) */}
           <div className="space-y-2">
             <p className="text-xs font-medium text-gray-500">Printer untuk Cetak Nota</p>

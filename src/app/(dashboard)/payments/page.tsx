@@ -29,6 +29,7 @@ export default function PaymentsPage() {
   const [printPayment, setPrintPayment] = useState<any>(null)
   const [notaDesign, setNotaDesign] = useState<string>('classic')
   const [notaFooter, setNotaFooter] = useState('')
+  const [notaPaper, setNotaPaper] = useState(40)
   const [notaTenant, setNotaTenant] = useState({ name: 'Gym', address: '', phone: '' })
   const [printerDefault, setPrinterDefault] = useState('')
 
@@ -37,6 +38,7 @@ export default function PaymentsPage() {
       if (s) {
         if (isNotaDesign(s.nota_design)) setNotaDesign(s.nota_design)
         setNotaFooter(s.nota_footer || '')
+        setNotaPaper([40, 58, 80].includes(Number(s.nota_paper)) ? Number(s.nota_paper) : 40)
         setPrinterDefault(s.printer_default || '')
         setNotaTenant({ name: s.gym_name || s.tenant_name || 'Gym', address: s.gym_address || '', phone: s.gym_phone || s.tenant_phone || '' })
       }
@@ -82,7 +84,7 @@ export default function PaymentsPage() {
           total,
           footer: notaFooter || 'Terima kasih atas pembayaran Anda!',
         }
-        const escpos = buildEscPos(nota)
+        const escpos = buildEscPos(nota, notaPaper)
         const res = await kirimCetakEscPos(escpos, printer)
         setPrintStatus(res)
         setTimeout(() => setPrintStatus(''), 4000)
@@ -100,7 +102,7 @@ export default function PaymentsPage() {
   return (
     <>
       <style>{`
-        @page { size: 40mm auto; margin: 2mm; }
+        @page { size: ${notaPaper}mm auto; margin: 2mm; }
         @media print {
           /* Hapus header/footer browser (URL "http..") & sembunyikan semua UI.
              Nota sudah dipindahkan ke <body> (handlePrint), jadi hanya nota yg tersisa. */
