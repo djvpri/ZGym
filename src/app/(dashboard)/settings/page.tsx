@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { NOTA_DESIGNS, NOTA_CSS } from '@/lib/notaDesign'
 import { WEEKDAYS, WEEKDAY_LABEL, parseDaypass, DEFAULT_DAYPASS, type DaypassConfig } from '@/lib/daypass'
-import { berjalanDiTauri, daftarPrinterTauri } from '@/lib/escpos'
+import { deteksiDesktop, daftarPrinterTauri } from '@/lib/escpos'
 
 function formatRp(n: number) { return 'Rp ' + n.toLocaleString('id-ID') }
 
@@ -20,6 +20,7 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false)
   const [tab, setTab] = useState<'gym' | 'plans' | 'instructors' | 'nota' | 'daypass'>('gym')
   const [printers, setPrinters] = useState<string[]>([])
+  const [isDesktop, setIsDesktop] = useState(false)
 
   useEffect(() => {
     fetch('/api/settings').then(r => r.json()).then(s => {
@@ -28,9 +29,10 @@ export default function SettingsPage() {
     })
     fetch('/api/membership-plans').then(r => r.json()).then(setPlans)
     fetch('/api/instructors').then(r => r.json()).then(setInstructors)
-    if (berjalanDiTauri()) {
-      daftarPrinterTauri().then(setPrinters).catch(() => setPrinters([]))
-    }
+    deteksiDesktop().then((ok) => {
+      setIsDesktop(ok)
+      if (ok) daftarPrinterTauri().then(setPrinters).catch(() => setPrinters([]))
+    })
   }, [])
 
   const saveSettings = async () => {
@@ -296,7 +298,7 @@ export default function SettingsPage() {
           {/* Pilih printer utk cetak thermal (hanya relevan di ZXgym desktop) */}
           <div className="space-y-2">
             <p className="text-xs font-medium text-gray-500">Printer untuk Cetak Nota</p>
-            {berjalanDiTauri() ? (
+            {isDesktop ? (
               <>
                 <select
                   value={settings.printer_default || ''}

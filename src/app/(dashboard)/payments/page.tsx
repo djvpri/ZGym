@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { NOTA_CSS, isNotaDesign } from '@/lib/notaDesign'
-import { berjalanDiTauri, kirimCetakEscPos, daftarPrinterTauri, buildEscPos, type NotaEscPos } from '@/lib/escpos'
+import { deteksiDesktop, kirimCetakEscPos, daftarPrinterTauri, buildEscPos, type NotaEscPos } from '@/lib/escpos'
 
 function formatRp(n: number) { return 'Rp ' + n.toLocaleString('id-ID') }
 
@@ -59,7 +59,7 @@ export default function PaymentsPage() {
   const handlePrint = async () => {
     const p = printPayment
     if (!p) return
-    if (berjalanDiTauri()) {
+    if (await deteksiDesktop()) {
       try {
         let list: string[] = []
         try { list = await daftarPrinterTauri() || [] } catch { list = [] }

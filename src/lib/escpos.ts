@@ -4,8 +4,8 @@
 // jadi tegas/tajam, tak buram. `window.print()` web buram krn rasterize via browser.
 //
 // Catatan: halaman web ZGym juga dijalankan di luar desktop (browser biasa).
-// Safe-guard: semua pemakaian Tauri runtime di bawah dibungkus `berjalanDiTauri()`
-// supaya halaman web tetap jalan (fallback window.print).
+// Safe-guard: semua pemakaian loopback desktop di bawah dibungkus `deteksiDesktop()`
+// (fetch /ping) supaya halaman web tetap jalan (fallback window.print).
 
 type AnyObj = Record<string, any>
 
@@ -27,29 +27,55 @@ function buatStringBytes(): string[] {
   return [] as string[]
 }
 
-/** Deteksi apakah halaman berjalan di dalam ZXgym desktop (Tauri/WebView2). */
-export function berjalanDiTauri(): boolean {
-  // window.__TAURI__ bisa di window atau global; type-unsafe bareng
+// Port loopback HTTP yg di-bind ZXgym desktop app (sinkron dgn const di lib.rs).
+const LOOPBACK_URL = 'http://127.0.0.1:39777'
+
+async function loopback(
+  path: string,
+  timeoutMs = 2500,
+  init?: RequestInit
+): Promise<Response> {
+  const ac = new AbortController()
+  const t = window.setTimeout(() => ac.abort(), timeoutMs)
   try {
-    const w = window as AnyObj
-    return Boolean(w.__TAURI__)
+    return await fetch(`${LOOPBACK_URL}${path}`, { ...init, signal: ac.signal })
+  } finally {
+    window.clearTimeout(t)
+  }
+}
+
+/** Deteksi apakah halaman berjalan di dalam ZXgym desktop (loopback server ada). */
+export async function deteksiDesktop(): Promise<boolean> {
+  try {
+    const r = await loopback('/ping', 800)
+    if (!r.ok) return false
+    return (await r.json()).ok === true
   } catch {
     return false
   }
 }
 
-/** Kirim byte ESC/POS ke printer via command Rust cetak_escpos (winspool RAW). */
+/** Kirim byte ESC/POS ke printer via loopback desktop -> winspool RAW. */
 export async function kirimCetakEscPos(escpos: string, printer: string): Promise<string> {
-  const w = window as AnyObj
-  if (!w.__TAURI__?.core?.invoke) throw new Error('Tauri runtime tidak tersedia')
-  return await w.__TAURI__.core.invoke('cetak_escpos', { escpos, namaPrinter: printer })
+  const r = await loopback('/cetak', 8000, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ escpos, printer }),
+  })
+  const j = await r.json()
+  if (!r.ok || j.error) throw new Error(j.error || `cetak http ${r.status}`)
+  return j.ok
 }
 
-/** Ambil daftar printer terpasang (command Rust daftar_printer). */
+/** Ambil daftar printer terpasang via loopback desktop. */
 export async function daftarPrinterTauri(): Promise<string[]> {
-  const w = window as AnyObj
-  if (!w.__TAURI__?.core?.invoke) return []
-  return await w.__TAURI__.core.invoke('daftar_printer')
+  try {
+    const r = await loopback('/printers', 2500)
+    if (!r.ok) return []
+    return (await r.json()).printers ?? []
+  } catch {
+    return []
+  }
 }
 
 // --- ESC/POS primitive (pola z1-kasir) ---

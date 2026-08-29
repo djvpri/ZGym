@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { NOTA_CSS, isNotaDesign } from '@/lib/notaDesign'
 import { parseDaypass, daypassPriceFor, DEFAULT_DAYPASS, type DaypassConfig } from '@/lib/daypass'
-import { berjalanDiTauri, kirimCetakEscPos, daftarPrinterTauri, buildEscPos, type NotaEscPos } from '@/lib/escpos'
+import { deteksiDesktop, kirimCetakEscPos, daftarPrinterTauri, buildEscPos, type NotaEscPos } from '@/lib/escpos'
 
 function formatRp(n: number) { return 'Rp ' + n.toLocaleString('id-ID') }
 
@@ -137,7 +137,7 @@ export default function NewPaymentPage() {
   const handlePrint = async () => {
     const r = receipt
     if (!r) return
-    if (berjalanDiTauri()) {
+    if (await deteksiDesktop()) {
       try {
         let list: string[] = []
         try { list = await daftarPrinterTauri() || [] } catch { list = [] }
