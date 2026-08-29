@@ -89,9 +89,11 @@ export async function daftarPrinterTauri(): Promise<string[]> {
   }
 }
 
-// Konstanta lebar kolom per ukuran kertas thermal (bisa dioverride via buildEscPos).
-// 32 kolom ≈ 58mm/40mm; 42 kolom ≈ 80mm. Tambahan utk 80mm pakai 42 kolom.
-const KOLOM = (mm: number): number => (mm >= 80 ? 42 : 32)
+// Konstanta lebar kolom printable yang AMAN utk semua printer thermal (ESC/POS).
+// 32 kolom = standar thermal (40/58/80mm) & terbukti di Z1-POS; 42 kolom utk
+// 80mm sering overflow krn font/driver printer lebih lebar dr target kolom →
+// teks terpotong kanan. Pilih 32 konsisten biar tak pernah terpotong.
+const KOLOM = (mm: number): number => 32
 
 const esc = (s: unknown) => String(s ?? '')
 
