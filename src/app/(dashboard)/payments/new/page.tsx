@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { NOTA_CSS, isNotaDesign } from '@/lib/notaDesign'
 import { parseDaypass, daypassPriceFor, DEFAULT_DAYPASS, type DaypassConfig } from '@/lib/daypass'
+import { berjalanDiTauri, kirimCetakEscPos, daftarPrinterTauri, buildEscPos, type NotaEscPos } from '@/lib/escpos'
 
 function formatRp(n: number) { return 'Rp ' + n.toLocaleString('id-ID') }
 
@@ -126,9 +127,47 @@ export default function NewPaymentPage() {
 
   const selectedPlan = plans.find(p => p.id === form.membershipPlanId)
 
-  // Pindahkan nota ke <body> sebelum print supaya tinggi dokumen pas isi struk
-  // (bukan setinggi modal/halaman). Kunci agar cetak thermal 80mm tidak blank panjang.
-  const handlePrint = () => {
+  // Pindahkan nota ke <body> sebelum print (jalur web) supaya tinggi dokumen pas
+  // isi struk. Bila di dalam ZXgym desktop (Tauri) → jalur ESC/POS langsung ke
+  // printer thermal (winspool RAW, seperti z1-kasir) — hasil tegas, tak buram.
+  const [printerTauri, setPrinterTauri] = useState('')
+  const [printStatus, setPrintStatus] = useState('')
+  const handlePrint = async () => {
+    const r = receipt
+    if (!r) return
+    if (berjalanDiTauri()) {
+      try {
+        let list: string[] = []
+        try { list = await daftarPrinterTauri() || [] } catch { list = [] }
+        let printer = printerTauri || list.find(x => /rpp|thermal|receipt|pos|usb/i.test(x)) || list[0]
+        if (!printer) {
+          const pick = window.prompt('Printer thermal (dari daftar Windows):\n' + (list.join('\n') || '(tidak ada printer terdeteksi)'))
+          if (!pick) return
+          printer = pick
+        }
+        if (!printerTauri) setPrinterTauri(printer)
+        const nota: NotaEscPos = {
+          tenant: notaTenant,
+          tanggal: new Date(r.date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }),
+          jam: new Date(r.date).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
+          tipe: (TYPE_LABEL[r.type] || r.type || '-') as string,
+          member: r.memberName || '-',
+          deskripsi: r.description || '',
+          paket: r.planName || '',
+          metode: (METHOD_LABEL[r.method] || r.method || '-') as string,
+          total: formatRp(Number(r.amount)),
+          footer: notaFooter || 'Terima kasih atas pembayaran Anda!',
+        }
+        const escpos = buildEscPos(nota)
+        const res = await kirimCetakEscPos(escpos, printer)
+        setPrintStatus(res)
+        setTimeout(() => setPrintStatus(''), 4000)
+      } catch (e) {
+        setPrintStatus('Cetak gagal: ' + (e instanceof Error ? e.message : String(e)))
+        setTimeout(() => setPrintStatus(''), 5000)
+      }
+      return
+    }
     const n = document.getElementById('nota-payment')
     if (n) document.body.appendChild(n)
     window.print()
@@ -340,6 +379,12 @@ export default function NewPaymentPage() {
                   <p key={i}>{line}</p>
                 ))}
               </div>
+            </div>
+
+            <div className="px-6 pb-3">
+              {printStatus && (
+                <p className="w-full text-xs text-center text-gray-600 bg-blue-50 rounded p-2">{printStatus}</p>
+              )}
             </div>
 
             <div className="flex gap-3 px-6 pb-5">
