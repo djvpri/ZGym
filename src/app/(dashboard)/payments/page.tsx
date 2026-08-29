@@ -48,23 +48,33 @@ export default function PaymentsPage() {
 
   const total = payments.filter(p => p.status === 'paid').reduce((s, p) => s + Number(p.amount), 0)
 
+  // Pindahkan nota ke <body> sebelum print supaya tinggi dokumen pas isi struk
+  // (bukan setinggi modal/halaman). Kunci agar cetak thermal 80mm tidak blank panjang.
+  const handlePrint = () => {
+    const n = document.getElementById('nota-payment-list')
+    if (n) document.body.appendChild(n)
+    window.print()
+  }
+
   return (
     <>
       <style>{`
-        @page { size: auto; margin: 0; }
+        @page { size: 80mm auto; margin: 0; }
         @media print {
-          /* Hapus header/footer browser (URL "http..") & sembunyikan UI */
-          body * { visibility: hidden !important; }
-          #nota-payment-list, #nota-payment-list * { visibility: visible !important; }
+          /* Hapus header/footer browser (URL "http..") & sembunyikan semua UI.
+             Nota sudah dipindahkan ke <body> (handlePrint), jadi hanya nota yg tersisa. */
+          body > *:not(#nota-payment-list) { display: none !important; }
           #nota-payment-list {
-            position: absolute !important; top: 0 !important; left: 0 !important;
-            width: 100% !important; max-width: none !important; height: auto !important;
-            margin: 0 !important; padding: 24px !important; background: white !important;
-            overflow: visible !important;
+            display: block !important;
+            width: 80mm !important; max-width: none !important;
+            height: auto !important; margin: 0 !important;
+            padding: 6mm 7mm !important; background: white !important;
             box-shadow: none !important; border-radius: 0 !important;
           }
-          /* Pastikan parent modal (overlay + card) tidak memotong / men-scroll nota */
-          #nota-payment-list, #nota-payment-list * { overflow: visible !important; }
+          /* Nota dibatasi lebar struk — jangan mengembung ke kiri/kanan */
+          #nota-payment-list * { max-width: none !important; }
+          /* Desain dengan header margin negatif (modern) jangan melebihi tepi struk */
+          #nota-payment-list .nota-header { margin: 0 0 8px !important; }
         }
         ${NOTA_CSS}
       `}</style>
@@ -194,7 +204,7 @@ export default function PaymentsPage() {
             </div>
 
             <div className="flex gap-3 px-6 pb-5 print:hidden">
-              <button onClick={() => window.print()}
+              <button onClick={handlePrint}
                 className="flex-1 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium flex items-center justify-center gap-2">
                 <i className="bi bi-printer" /> Cetak
               </button>
