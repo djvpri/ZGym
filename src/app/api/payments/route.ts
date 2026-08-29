@@ -26,10 +26,10 @@ export async function POST(req: NextRequest) {
   const tenantId = await requireTenant()
   const body = await req.json()
 
-  // Guest (tanpa member): wajib ada nama guest; tak bisa type=pembelian membership milik member.
+  // Guest (tanpa member): nama guest optional. Member wajib diikutsertakan jika bukan guest.
   const isGuest = !body.memberId
-  if (isGuest && !body.guestName) {
-    return NextResponse.json({ error: 'guestName wajib untuk pembayaran guest.' }, { status: 422 })
+  if (isGuest && body.membershipId) {
+    return NextResponse.json({ error: 'Pembayaran membership harus milik member.' }, { status: 422 })
   }
 
   const payment = await prisma.payment.create({

@@ -152,7 +152,7 @@ export default function NewPaymentPage() {
           ) : (
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Nama Guest</label>
-            <input value={form.guestName} onChange={(e) => setForm({ ...form, guestName: e.target.value })} className="w-full px-3 py-2 border rounded-lg" placeholder="Nama pengunjung" required />
+            <input value={form.guestName} onChange={(e) => setForm({ ...form, guestName: e.target.value })} className="w-full px-3 py-2 border rounded-lg" placeholder="Nama pengunjung (opsional)" />
           </div>
           )}
           <div>
@@ -188,8 +188,11 @@ export default function NewPaymentPage() {
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Jumlah (Rp)</label>
-              <input type="number" value={form.amount} onChange={(e) => setForm({ ...form, amount: Number(e.target.value) })} className="w-full px-3 py-2 border rounded-lg" min={0} required />
+              <label className="block text-sm font-medium text-gray-700 mb-1">{form.type === 'day_pass' ? 'Harga (dari Pengaturan Day Pass)' : 'Jumlah (Rp)'}</label>
+              <input type="number" value={form.type === 'day_pass' ? daypassPriceFor(new Date(), daypassCfg) : form.amount}
+                onChange={(e) => setForm({ ...form, amount: Number(e.target.value) })}
+                disabled={form.type === 'day_pass'} className="w-full px-3 py-2 border rounded-lg disabled:bg-gray-100 disabled:text-gray-500" min={0} required />
+              {form.type === 'day_pass' && <p className="text-xs text-gray-400 mt-1">Otomatis dari pengaturan (per hari & hari libur).</p>}
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Metode Bayar</label>
