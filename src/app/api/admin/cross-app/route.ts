@@ -22,7 +22,7 @@ async function ensureMember(tenantId: string, p: { name: string; email: string }
   const lastMember = await prisma.member.findFirst({ where: { tenantId }, orderBy: { memberNumber: 'desc' } })
   const nextNum = lastMember ? parseInt(lastMember.memberNumber.replace('GYM-', '')) + 1 : 1
   const memberNumber = `GYM-${String(nextNum).padStart(5, '0')}`
-  return prisma.member.create({ data: { tenantId, memberNumber, name: p.name, email: p.email } })
+  return prisma.member.create({ data: { tenantId, memberNumber, name: p.name, email: p.email, status: 'inactive' } })
 }
 
 export async function GET(req: NextRequest) {

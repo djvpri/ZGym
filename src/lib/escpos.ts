@@ -55,6 +55,17 @@ export async function deteksiDesktop(): Promise<boolean> {
   }
 }
 
+/** Ambil versi ZXgym desktop (dari /ping). Kosong kalau bukan desktop. */
+export async function getDesktopVersion(): Promise<string> {
+  try {
+    const r = await loopback('/ping', 800)
+    if (!r.ok) return ''
+    return String((await r.json()).version || '')
+  } catch {
+    return ''
+  }
+}
+
 /** Kirim byte ESC/POS ke printer via loopback desktop -> winspool RAW. */
 export async function kirimCetakEscPos(escpos: string, printer: string): Promise<string> {
   const r = await loopback('/cetak', 8000, {

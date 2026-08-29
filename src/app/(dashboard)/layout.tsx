@@ -2,8 +2,9 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { signOut, useSession } from 'next-auth/react'
+import { getDesktopVersion } from '@/lib/escpos'
 
 const menuItems = [
   { href: '/dashboard',  label: 'Dashboard',         icon: 'bi-speedometer2' },
@@ -32,6 +33,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const { data: session } = useSession()
   const user = session?.user as any
+  const [desktopVersion, setDesktopVersion] = useState('')
+
+  useEffect(() => {
+    getDesktopVersion().then(setDesktopVersion)
+  }, [])
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
@@ -45,7 +51,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <div className="p-6">
           <div className="flex items-center gap-2">
             <i className="bi bi-lightning-charge-fill text-yellow-400 text-xl" />
-            <h1 className="text-xl font-bold tracking-tight">ZXgym</h1>
+            <div className="leading-tight">
+              <h1 className="text-xl font-bold tracking-tight">ZXgym</h1>
+              {desktopVersion && (
+                <span className="text-[10px] text-slate-400 font-medium">v{desktopVersion}</span>
+              )}
+            </div>
           </div>
           {user?.tenantName && (
             <div className="mt-3">
