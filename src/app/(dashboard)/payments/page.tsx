@@ -50,12 +50,18 @@ export default function PaymentsPage() {
     <>
       <style>{`
         @media print {
+          /* Sembunyikan semua UI, cetak hanya nota dalam modal print */
           body * { visibility: hidden !important; }
           #nota-payment-list, #nota-payment-list * { visibility: visible !important; }
           #nota-payment-list {
-            position: fixed !important; top: 0 !important; left: 0 !important;
-            width: 100% !important; padding: 24px !important; background: white !important;
+            position: fixed !important; inset: 0 !important;
+            width: 100% !important; max-width: none !important;
+            margin: 0 !important; padding: 24px !important; background: white !important;
+            overflow: visible !important;
+            box-shadow: none !important; border-radius: 0 !important;
           }
+          /* Pastikan parent modal (overlay + card) tidak memotong / men-scroll nota */
+          #nota-payment-list, #nota-payment-list * { overflow: visible !important; }
         }
         ${NOTA_CSS}
       `}</style>
