@@ -8,7 +8,7 @@ function formatRp(n: number) { return 'Rp ' + n.toLocaleString('id-ID') }
 
 const TYPE_LABEL: Record<string, string> = {
   membership: 'Membership', pt_session: 'Personal Training',
-  product: 'Produk', other: 'Lainnya',
+  product: 'Produk', other: 'Lainnya', day_pass: 'Day Pass',
 }
 const METHOD_LABEL: Record<string, string> = {
   cash: 'Tunai', transfer: 'Transfer', card: 'Kartu', e_wallet: 'E-Wallet',
@@ -18,6 +18,7 @@ const typeColors: Record<string, string> = {
   pt_session: 'bg-purple-100 text-purple-700',
   product: 'bg-green-100 text-green-700',
   other: 'bg-gray-100 text-gray-700',
+  day_pass: 'bg-orange-100 text-orange-700',
 }
 
 export default function PaymentsPage() {

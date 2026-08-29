@@ -158,6 +158,7 @@ export default function NewPaymentPage() {
             <label className="block text-sm font-medium text-gray-700 mb-1">Tipe Pembayaran</label>
             <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })} className="w-full px-3 py-2 border rounded-lg">
               {payFor === 'member' && <option value="membership">Membership</option>}
+              <option value="day_pass">Day Pass (Masuk Harian)</option>
               <option value="pt_session">Personal Training</option>
               <option value="product">Produk</option>
               <option value="other">Lainnya</option>
