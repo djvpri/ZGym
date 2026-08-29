@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { NOTA_DESIGNS, NOTA_CSS } from '@/lib/notaDesign'
 import { WEEKDAYS, WEEKDAY_LABEL, parseDaypass, DEFAULT_DAYPASS, type DaypassConfig } from '@/lib/daypass'
+import { berjalanDiTauri, daftarPrinterTauri } from '@/lib/escpos'
 
 function formatRp(n: number) { return 'Rp ' + n.toLocaleString('id-ID') }
 
@@ -18,6 +19,7 @@ export default function SettingsPage() {
   const [editInstructor, setEditInstructor] = useState<any>(null)
   const [saving, setSaving] = useState(false)
   const [tab, setTab] = useState<'gym' | 'plans' | 'instructors' | 'nota' | 'daypass'>('gym')
+  const [printers, setPrinters] = useState<string[]>([])
 
   useEffect(() => {
     fetch('/api/settings').then(r => r.json()).then(s => {
@@ -26,6 +28,9 @@ export default function SettingsPage() {
     })
     fetch('/api/membership-plans').then(r => r.json()).then(setPlans)
     fetch('/api/instructors').then(r => r.json()).then(setInstructors)
+    if (berjalanDiTauri()) {
+      daftarPrinterTauri().then(setPrinters).catch(() => setPrinters([]))
+    }
   }, [])
 
   const saveSettings = async () => {
@@ -287,6 +292,28 @@ export default function SettingsPage() {
               className="w-full px-3 py-2 border rounded-lg" rows={2} />
             <p className="text-xs text-gray-400">Tiap baris = satu baris di nota. Kosongkan utk memakai teks default.</p>
           </div>
+
+          {/* Pilih printer utk cetak thermal (hanya relevan di ZXgym desktop) */}
+          <div className="space-y-2">
+            <p className="text-xs font-medium text-gray-500">Printer untuk Cetak Nota</p>
+            {berjalanDiTauri() ? (
+              <>
+                <select
+                  value={settings.printer_default || ''}
+                  onChange={(e) => setSettings({ ...settings, printer_default: e.target.value })}
+                  className="w-full px-3 py-2 border rounded-lg bg-white">
+                  <option value="">-- Pilih printer thermal --</option>
+                  {printers.map((p) => <option key={p} value={p}>{p}</option>)}
+                </select>
+                {printers.length === 0 && (
+                  <p className="text-xs text-amber-600">Printer belum terdeteksi. Pastikan driver thermal terpasang di Windows lalu buka kembali halaman ini.</p>
+                )}
+              </>
+            ) : (
+              <p className="text-xs text-gray-400">Akses ini dibuka di browser — cetak nota via dialog cetak browser (bukan pilih printer). Buka ZXgym desktop utk cetak langsung ke printer thermal.</p>
+            )}
+          </div>
+
           <div className="space-y-2">
             {NOTA_DESIGNS.map((d) => (
               <button key={d.key} type="button" onClick={() => setSettings({ ...settings, nota_design: d.key })}

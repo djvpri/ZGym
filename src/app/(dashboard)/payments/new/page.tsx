@@ -32,6 +32,7 @@ export default function NewPaymentPage() {
   const [notaDesign, setNotaDesign] = useState<string>('classic')
   const [notaFooter, setNotaFooter] = useState('')
   const [notaTenant, setNotaTenant] = useState({ name: 'Gym', address: '', phone: '' })
+  const [printerDefault, setPrinterDefault] = useState('')
   const [daypassCfg, setDaypassCfg] = useState<DaypassConfig>(DEFAULT_DAYPASS)
   const [products, setProducts] = useState<any[]>([])
 
@@ -39,6 +40,7 @@ export default function NewPaymentPage() {
     fetch('/api/settings').then(r => r.json()).then(s => {
       if (s && isNotaDesign(s.nota_design)) setNotaDesign(s.nota_design)
       setNotaFooter(s.nota_footer || '')
+      setPrinterDefault(s.printer_default || '')
       setNotaTenant({ name: s.gym_name || s.tenant_name || 'Gym', address: s.gym_address || '', phone: s.gym_phone || s.tenant_phone || '' })
       if (s?.daypass) setDaypassCfg(parseDaypass(s.daypass))
     }).catch(() => {})
@@ -139,7 +141,7 @@ export default function NewPaymentPage() {
       try {
         let list: string[] = []
         try { list = await daftarPrinterTauri() || [] } catch { list = [] }
-        let printer = printerTauri || list.find(x => /rpp|thermal|receipt|pos|usb/i.test(x)) || list[0]
+        let printer = printerDefault || printerTauri || list.find(x => /rpp|thermal|receipt|pos|usb/i.test(x)) || list[0]
         if (!printer) {
           const pick = window.prompt('Printer thermal (dari daftar Windows):\n' + (list.join('\n') || '(tidak ada printer terdeteksi)'))
           if (!pick) return
