@@ -40,6 +40,13 @@ export default function NewPaymentPage() {
     }).catch(() => {})
   }, [])
 
+  // Saat config day pass siap & tipe sudah day_pass, isi ulang harga utk hari ini
+  // (hindari bug: user pilih day_pass sebelum settings selesai dimuat -> harga kosong).
+  const daypassPrice = daypassPriceFor(new Date(), daypassCfg)
+  useEffect(() => {
+    setForm(f => (f.type === 'day_pass' && daypassCfg !== DEFAULT_DAYPASS) ? { ...f, amount: daypassPrice } : f)
+  }, [daypassCfg, daypassPrice])
+
   useEffect(() => {
     let cancelled = false
     Promise.all([
@@ -188,11 +195,11 @@ export default function NewPaymentPage() {
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{form.type === 'day_pass' ? 'Harga (dari Pengaturan Day Pass)' : 'Jumlah (Rp)'}</label>
-              <input type="number" value={form.type === 'day_pass' ? daypassPriceFor(new Date(), daypassCfg) : form.amount}
+              <label className="block text-sm font-medium text-gray-700 mb-1">Jumlah (Rp)</label>
+              <input type="number" value={form.amount}
                 onChange={(e) => setForm({ ...form, amount: Number(e.target.value) })}
-                disabled={form.type === 'day_pass'} className="w-full px-3 py-2 border rounded-lg disabled:bg-gray-100 disabled:text-gray-500" min={0} required />
-              {form.type === 'day_pass' && <p className="text-xs text-gray-400 mt-1">Otomatis dari pengaturan (per hari & hari libur).</p>}
+                className="w-full px-3 py-2 border rounded-lg" min={0} required />
+              {form.type === 'day_pass' && <p className="text-xs text-gray-400 mt-1">Terisi otomatis dari pengaturan day pass, bisa diubah.</p>}
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Metode Bayar</label>
