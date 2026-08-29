@@ -145,7 +145,7 @@ export default function NewPaymentPage() {
           #nota-payment {
             display: block !important;
             width: 80mm !important; max-width: none !important;
-            height: auto !important; margin: 0 !important;
+            height: auto !important; margin: 0 auto !important;
             padding: 6mm 7mm !important; background: white !important;
             box-shadow: none !important; border-radius: 0 !important;
           }
