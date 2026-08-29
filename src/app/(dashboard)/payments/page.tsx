@@ -51,22 +51,20 @@ export default function PaymentsPage() {
   return (
     <>
       <style>{`
-        @page { size: 80mm auto; margin: 0; }
+        @page { size: auto; margin: 0; }
         @media print {
-          /* Hapus header/footer browser (URL "http..") & sembunyikan semua UI */
+          /* Hapus header/footer browser (URL "http..") & sembunyikan UI */
           body * { visibility: hidden !important; }
           #nota-payment-list, #nota-payment-list * { visibility: visible !important; }
           #nota-payment-list {
-            position: static !important;
-            width: 80mm !important; max-width: none !important;
-            height: auto !important; margin: 0 auto !important;
-            padding: 12px !important; background: white !important;
+            position: absolute !important; top: 0 !important; left: 0 !important;
+            width: 100% !important; max-width: none !important; height: auto !important;
+            margin: 0 !important; padding: 24px !important; background: white !important;
+            overflow: visible !important;
             box-shadow: none !important; border-radius: 0 !important;
           }
-          /* Nota dibatasi lebar struk — jangan biarkan mengembung ke kiri/kanan */
-          #nota-payment-list * { max-width: none !important; }
-          /* Desain dengan header margin negatif (modern) jangan melebihi tepi struk */
-          #nota-payment-list .nota-header { margin: 0 0 8px !important; }
+          /* Pastikan parent modal (overlay + card) tidak memotong / men-scroll nota */
+          #nota-payment-list, #nota-payment-list * { overflow: visible !important; }
         }
         ${NOTA_CSS}
       `}</style>
@@ -135,8 +133,8 @@ export default function PaymentsPage() {
 
       {/* Modal Nota */}
       {printPayment && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 print:static print:block print:h-auto print:bg-none print:overflow-visible">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 overflow-hidden print:max-w-none print:overflow-visible print:shadow-none print:rounded-none">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 overflow-hidden">
             <div id="nota-payment-list" data-nota-design={notaDesign} className="p-6 text-sm">
               <div className="nota-header">
                 <div className="nota-brand flex items-center justify-center gap-2">
