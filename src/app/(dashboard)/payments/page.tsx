@@ -152,16 +152,16 @@ export default function PaymentsPage() {
 
               <div className="space-y-1 text-xs mb-3">
                 <div className="nota-row flex justify-between">
-                  <span className="text-gray-500">Member</span>
-                  <span className="font-semibold">{printPayment.member?.name || printPayment.guestName || '-'}</span>
-                </div>
-                <div className="nota-row flex justify-between">
                   <span className="text-gray-500">Tipe</span>
                   <span>{TYPE_LABEL[printPayment.type] || printPayment.type}</span>
                 </div>
                 <div className="nota-row flex justify-between">
+                  <span className="text-gray-500">Member</span>
+                  <span className="font-semibold truncate max-w-[60%] text-right">{printPayment.member?.name || printPayment.guestName || '-'}</span>
+                </div>
+                <div className="nota-row flex justify-between">
                   <span className="text-gray-500">Deskripsi</span>
-                  <span className="text-right max-w-[55%]">{printPayment.description}</span>
+                  <span className="text-right truncate max-w-[60%]">{printPayment.description}</span>
                 </div>
                 <div className="nota-row flex justify-between">
                   <span className="text-gray-500">Metode</span>

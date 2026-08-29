@@ -276,7 +276,7 @@ export default function NewPaymentPage() {
               <div className="space-y-1 text-xs mb-3">
                 <div className="nota-row flex justify-between">
                   <span className="text-gray-500">Member</span>
-                  <span className="font-semibold">{receipt.memberName}</span>
+                  <span className="font-semibold truncate max-w-[60%] text-right">{receipt.memberName}</span>
                 </div>
                 <div className="nota-row flex justify-between">
                   <span className="text-gray-500">Tipe</span>
@@ -284,7 +284,7 @@ export default function NewPaymentPage() {
                 </div>
                 <div className="nota-row flex justify-between">
                   <span className="text-gray-500">Deskripsi</span>
-                  <span className="text-right max-w-[55%]">{receipt.description}</span>
+                  <span className="text-right truncate max-w-[60%]">{receipt.description}</span>
                 </div>
                 {receipt.planName && (
                   <div className="nota-row flex justify-between">
@@ -299,7 +299,7 @@ export default function NewPaymentPage() {
                 {receipt.notes && (
                   <div className="nota-row flex justify-between">
                     <span className="text-gray-500">Catatan</span>
-                    <span className="text-right max-w-[55%]">{receipt.notes}</span>
+                    <span className="text-right truncate max-w-[60%]">{receipt.notes}</span>
                   </div>
                 )}
               </div>
