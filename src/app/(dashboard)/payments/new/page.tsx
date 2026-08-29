@@ -30,7 +30,7 @@ export default function NewPaymentPage() {
   const [receipt, setReceipt] = useState<Receipt | null>(null)
   const [notaDesign, setNotaDesign] = useState<string>('classic')
   const [notaFooter, setNotaFooter] = useState('')
-  const [notaTenant, setNotaTenant] = useState({ name: 'ZXgym', address: '', phone: '' })
+  const [notaTenant, setNotaTenant] = useState({ name: 'Gym', address: '', phone: '' })
   const [daypassCfg, setDaypassCfg] = useState<DaypassConfig>(DEFAULT_DAYPASS)
   const [products, setProducts] = useState<any[]>([])
 
@@ -38,7 +38,7 @@ export default function NewPaymentPage() {
     fetch('/api/settings').then(r => r.json()).then(s => {
       if (s && isNotaDesign(s.nota_design)) setNotaDesign(s.nota_design)
       setNotaFooter(s.nota_footer || '')
-      setNotaTenant({ name: s.tenant_name || 'ZXgym', address: s.tenant_address || '', phone: s.tenant_phone || '' })
+      setNotaTenant({ name: s.gym_name || s.tenant_name || 'Gym', address: s.gym_address || '', phone: s.gym_phone || s.tenant_phone || '' })
       if (s?.daypass) setDaypassCfg(parseDaypass(s.daypass))
     }).catch(() => {})
   }, [])

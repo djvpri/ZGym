@@ -28,14 +28,14 @@ export default function PaymentsPage() {
   const [printPayment, setPrintPayment] = useState<any>(null)
   const [notaDesign, setNotaDesign] = useState<string>('classic')
   const [notaFooter, setNotaFooter] = useState('')
-  const [notaTenant, setNotaTenant] = useState({ name: 'ZXgym', address: '', phone: '' })
+  const [notaTenant, setNotaTenant] = useState({ name: 'Gym', address: '', phone: '' })
 
   useEffect(() => {
     fetch('/api/settings').then(r => r.json()).then(s => {
       if (s) {
         if (isNotaDesign(s.nota_design)) setNotaDesign(s.nota_design)
         setNotaFooter(s.nota_footer || '')
-        setNotaTenant({ name: s.tenant_name || 'ZXgym', address: s.tenant_address || '', phone: s.tenant_phone || '' })
+        setNotaTenant({ name: s.gym_name || s.tenant_name || 'Gym', address: s.gym_address || '', phone: s.gym_phone || s.tenant_phone || '' })
       }
     }).catch(() => {})
   }, [])
@@ -193,7 +193,7 @@ export default function PaymentsPage() {
               </div>
             </div>
 
-            <div className="flex gap-3 px-6 pb-5">
+            <div className="flex gap-3 px-6 pb-5 print:hidden">
               <button onClick={() => window.print()}
                 className="flex-1 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium flex items-center justify-center gap-2">
                 <i className="bi bi-printer" /> Cetak
