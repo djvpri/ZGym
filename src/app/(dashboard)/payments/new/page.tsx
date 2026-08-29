@@ -191,7 +191,7 @@ export default function NewPaymentPage() {
           )}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Deskripsi</label>
-            <input value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="w-full px-3 py-2 border rounded-lg" required />
+            <input value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="w-full px-3 py-2 border rounded-lg" placeholder="Opsional" />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
