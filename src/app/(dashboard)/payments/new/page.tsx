@@ -137,22 +137,30 @@ export default function NewPaymentPage() {
   return (
     <>
       <style>{`
-        @page { size: 80mm auto; margin: 0; }
+        @page { size: 40mm auto; margin: 0; }
         @media print {
           /* Hapus header/footer browser (URL "http..") & sembunyikan semua UI.
              Nota sudah dipindahkan ke <body> (handlePrint), jadi hanya nota yg tersisa. */
           body > *:not(#nota-payment) { display: none !important; }
           #nota-payment {
             display: block !important;
-            width: 80mm !important; max-width: none !important;
+            width: 40mm !important; max-width: none !important;
             height: auto !important; margin: 0 auto !important;
-            padding: 6mm 7mm !important; background: white !important;
+            padding: 3mm 3mm !important; background: white !important;
             box-shadow: none !important; border-radius: 0 !important;
+            font-size: 9px !important; line-height: 1.35 !important;
           }
           /* Nota dibatasi lebar struk — jangan mengembung ke kiri/kanan */
           #nota-payment * { max-width: none !important; }
-          /* Desain dengan header margin negatif (modern) jangan melebihi tepi struk */
-          #nota-payment .nota-header { margin: 0 0 8px !important; }
+          #nota-payment .nota-brand { font-size: 13px !important; }
+          #nota-payment .nota-sub { font-size: 7px !important; }
+          #nota-payment .nota-total { font-size: 11px !important; }
+          #nota-payment .nota-row { margin: 1px 0 !important; }
+          #nota-payment .text-xs { font-size: 8px !important; }
+          #nota-payment .text-sm { font-size: 9px !important; }
+          #nota-payment .nota-block { margin: 3px 0 !important; }
+          #nota-payment .nota-header { margin: 0 0 4px !important; }
+          #nota-payment .nota-footer { font-size: 8px !important; }
         }
         ${NOTA_CSS}
       `}</style>
