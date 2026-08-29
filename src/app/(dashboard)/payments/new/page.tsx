@@ -35,6 +35,39 @@ export default function NewPaymentPage() {
   const [printerDefault, setPrinterDefault] = useState('')
   const [daypassCfg, setDaypassCfg] = useState<DaypassConfig>(DEFAULT_DAYPASS)
   const [products, setProducts] = useState<any[]>([])
+  const [shift, setShift] = useState<any>(null)
+  const [showShiftModal, setShowShiftModal] = useState(false)
+  const [modalAwal, setModalAwal] = useState('')
+  const [shiftErr, setShiftErr] = useState('')
+
+  const loadShift = async () => {
+    const r = await fetch('/api/shift').then(res => res.ok ? res.json() : []).catch(() => [])
+    const aktif = Array.isArray(r) ? r.find((s: any) => s.status === 'active') : null
+    setShift(aktif || null)
+  }
+  useEffect(() => { loadShift() }, [])
+
+  const bukaShift = async () => {
+    setShiftErr('')
+    const modal = Number(modalAwal || 0)
+    if (Number.isNaN(modal) || modal < 0) { setShiftErr('Modal awal tidak valid'); return }
+    const res = await fetch('/api/shift', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ modalAwal: modal }),
+    })
+    if (res.ok) { setShowShiftModal(false); setModalAwal(''); await loadShift() }
+    else { const d = await res.json().catch(() => ({})); setShiftErr(d.error || 'Gagal buka shift') }
+  }
+
+  const tutupShift = async () => {
+    if (!shift?.['id'] && !shift?.id) return
+    if (!confirm('Tutup shift sekarang? Rekap shift disimpan.')) return
+    const id = shift.id || shift['id']
+    const res = await fetch(`/api/shift/${id}`, { method: 'PATCH' })
+    if (res.ok) { setShift(null); alert(`Shift ditutup. ${(await res.json()).totalPenjualan ? 'Lihat rekap di Laporan (admin).' : ''}`) }
+    else setShiftErr((await res.json().catch(() => ({}))).error || 'Gagal tutup shift')
+  }
 
   useEffect(() => {
     fetch('/api/settings').then(r => r.json()).then(s => {
@@ -207,7 +240,34 @@ export default function NewPaymentPage() {
       `}</style>
 
       <div className="max-w-lg mx-auto">
-        <h1 className="text-2xl font-bold mb-6">Catat Pembayaran</h1>
+        <h1 className="text-2xl font-bold mb-4">Catat Pembayaran</h1>
+
+        {/* Shift kasir — buka shift sebelum transaksi (konsep Z1 POS). */}
+        <div className="mb-4 rounded-xl border p-4 flex items-center justify-between gap-3 bg-slate-50">
+          {shift ? (
+            <>
+              <div className="text-sm">
+                <div className="font-semibold text-slate-800">Shift {shift.nomorShift ? '#' + shift.nomorShift : ''} — {shift.kasirNama}</div>
+                <div className="text-xs text-gray-500 mt-0.5">
+                  Dibuka {shift.bukaAt ? new Date(shift.bukaAt).toLocaleString('id-ID') : ''} · Modal awal {formatRp(Number(shift.modalAwal || 0))}
+                </div>
+              </div>
+              <button type="button" onClick={tutupShift} className="shrink-0 px-4 py-2 rounded-lg bg-slate-800 text-white text-sm hover:bg-slate-700">Tutup Shift</button>
+            </>
+          ) : (
+            <>
+              <div className="text-sm text-gray-500">Belum ada shift aktif. Buka shift untuk mencatat transaksi.</div>
+              <button type="button" onClick={() => { setShiftErr(''); setShowShiftModal(true) }} className="shrink-0 px-4 py-2 rounded-lg bg-blue-600 text-white text-sm hover:bg-blue-700">Buka Shift</button>
+            </>
+          )}
+        </div>
+
+        {shiftErr && (
+          <div className="mb-4 rounded-lg border border-red-100 bg-red-50 px-4 py-2 text-sm text-red-600 flex justify-between items-center">
+            <span>{shiftErr}</span><button onClick={() => setShiftErr('')} className="text-red-400"><i className="bi bi-x-lg" /></button>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="bg-white rounded-xl p-6 shadow-sm border space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Dibayar oleh</label>
@@ -398,6 +458,28 @@ export default function NewPaymentPage() {
                 className="flex-1 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium">
                 Tutup
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal buka shift (input modal awal) */}
+      {showShiftModal && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => setShowShiftModal(false)}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden" onClick={e => e.stopPropagation()}>
+            <div className="p-6">
+              <h2 className="text-lg font-semibold text-gray-800">Buka Shift</h2>
+              <p className="text-sm text-gray-500 mt-1">Modal awal = uang tunai yg ada di kas saat shift dimulai.</p>
+              <div className="mt-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Modal awal (Rp)</label>
+                <input type="number" value={modalAwal} onChange={(e) => setModalAwal(e.target.value)}
+                  className="w-full px-3 py-2 border rounded-lg" placeholder="0" min={0} autoFocus />
+              </div>
+              {shiftErr && <p className="text-sm text-red-600 mt-2">{shiftErr}</p>}
+              <div className="flex gap-3 mt-5">
+                <button onClick={bukaShift} className="flex-1 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700">Buka Shift</button>
+                <button onClick={() => setShowShiftModal(false)} className="flex-1 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium">Batal</button>
+              </div>
             </div>
           </div>
         </div>

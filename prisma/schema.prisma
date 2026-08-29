@@ -46,6 +46,7 @@ model Tenant {
   Attendance     Attendance[]
   PtSession      PtSession[]
   Payment        Payment[]
+  shifts         Shift[]
 }
 
 // ─── MEMBERS ────────────────────────────────────────────
@@ -254,12 +255,36 @@ model Payment {
   status       String   @default("paid") // paid, pending, cancelled, refunded
   paidAt       DateTime @default(now())
   notes        String?
+  // Shift/kasir: pembayaran dicatat oleh user (kasir/admin) di dalam shift.
+  shiftId    String?
+  userId     String?
+  kasirNama  String?
 
   tenant     Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   member     Member?     @relation(fields: [memberId], references: [id], onDelete: Cascade)
   membership Membership? @relation(fields: [membershipId], references: [id])
   ptSession  PtSession?  @relation(fields: [ptSessionId], references: [id])
   product    Product?    @relation(fields: [productId], references: [id])
+  shift      Shift?      @relation(fields: [shiftId], references: [id])
+
+  createdAt DateTime @default(now())
+}
+
+// ─── SHIFT (kasir buka/tutup, konsep Z1 POS) ────────────
+model Shift {
+  id         String   @id @default(cuid())
+  tenantId   String
+  userId     String // user (kasir/admin) yg membuka shift
+  kasirNama  String
+  modalAwal  Decimal  @default(0) @db.Decimal(12, 2)
+  nomorShift Int      @default(1) // urutan buka shift di tenant HARI INI (#1,#2,..)
+  bukaAt     DateTime @default(now())
+  tutupAt    DateTime?
+  status     String   @default("active") // active, closed
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id])
+  payments Payment[]
 
   createdAt DateTime @default(now())
 }
@@ -299,6 +324,8 @@ model User {
 
   @@unique([tenantId, email])
   @@unique([tenantId, faceId])
+
+  shifts Shift[]
 }
 
 // ─── SETTINGS ──────────────────────────────────────────

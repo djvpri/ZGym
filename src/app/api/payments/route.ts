@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic"
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireTenant } from '@/lib/tenant'
+import { auth } from '@/lib/auth'
 
 export async function GET(req: NextRequest) {
   const tenantId = await requireTenant()
@@ -25,6 +26,16 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const tenantId = await requireTenant()
   const body = await req.json()
+  const session = await auth()
+  const me = (session?.user as any)?.id || null
+  const nama = (session?.user as any)?.name || null
+
+  // Attach shift kasir aktif (kalau ada) + siapa yg catat pembayaran.
+  let shiftId: string | null = null
+  if (me) {
+    const aktif = await prisma.shift.findFirst({ where: { tenantId, userId: me, status: 'active' } })
+    shiftId = aktif?.id || null
+  }
 
   // Guest (tanpa member): nama guest optional. Member wajib diikutsertakan jika bukan guest.
   const isGuest = !body.memberId
@@ -58,6 +69,9 @@ export async function POST(req: NextRequest) {
         method: body.method || 'cash',
         status: body.status || 'paid',
         notes: body.notes || null,
+        shiftId,
+        userId: me,
+        kasirNama: nama,
       },
       include: { member: true, product: true },
     })

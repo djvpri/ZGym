@@ -7,18 +7,19 @@ import { signOut, useSession } from 'next-auth/react'
 import { getDesktopVersion } from '@/lib/escpos'
 
 const menuItems = [
-  { href: '/dashboard',  label: 'Dashboard',         icon: 'bi-speedometer2' },
-  { href: '/members',    label: 'Members',            icon: 'bi-people' },
-  { href: '/classes',    label: 'Kelas',              icon: 'bi-activity' },
-  { href: '/schedule',   label: 'Jadwal',             icon: 'bi-calendar3' },
-  { href: '/attendance', label: 'Absensi',            icon: 'bi-clipboard-check' },
-  { href: '/pt',         label: 'Personal Training',  icon: 'bi-person-badge' },
-  { href: '/payments',   label: 'Pembayaran',         icon: 'bi-cash-coin' },
-  { href: '/products',   label: 'Produk',             icon: 'bi-box-seam' },
-  { href: '/reports',    label: 'Laporan',            icon: 'bi-bar-chart-line' },
-  { href: '/ai',         label: 'AI',                 icon: 'bi-stars' },
-  { href: '/lisensi',    label: 'Lisensi',            icon: 'bi-card-checklist' },
-  { href: '/settings',   label: 'Pengaturan',         icon: 'bi-gear' },
+  { href: '/dashboard',  label: 'Dashboard',         icon: 'bi-speedometer2', kasir: true },
+  { href: '/members',    label: 'Members',            icon: 'bi-people',      kasir: false },
+  { href: '/classes',    label: 'Kelas',              icon: 'bi-activity',    kasir: false },
+  { href: '/schedule',   label: 'Jadwal',             icon: 'bi-calendar3',   kasir: false },
+  { href: '/attendance', label: 'Absensi',            icon: 'bi-clipboard-check', kasir: false },
+  { href: '/pt',         label: 'Personal Training',  icon: 'bi-person-badge', kasir: false },
+  { href: '/payments',   label: 'Pembayaran',         icon: 'bi-cash-coin',   kasir: true },
+  { href: '/products',   label: 'Produk',             icon: 'bi-box-seam',    kasir: false },
+  { href: '/reports',    label: 'Laporan',            icon: 'bi-bar-chart-line', kasir: false },
+  { href: '/ai',         label: 'AI',                 icon: 'bi-stars',       kasir: false },
+  { href: '/lisensi',    label: 'Lisensi',            icon: 'bi-card-checklist', kasir: false },
+  { href: '/staff',      label: 'Staff',              icon: 'bi-person-gear', kasir: false },
+  { href: '/settings',   label: 'Pengaturan',         icon: 'bi-gear',        kasir: false },
 ]
 
 const PLAN_BADGES: Record<string, string> = {
@@ -69,7 +70,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
 
         <nav className="px-4 space-y-0.5">
-          {menuItems.map((item) => {
+          {(user?.role === 'staff'
+            ? menuItems.filter(m => m.kasir)
+            : menuItems).map((item) => {
             const isActive = pathname === item.href
             return (
               <Link

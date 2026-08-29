@@ -1,7 +1,13 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
+import { getToken } from 'next-auth/jwt'
 
-export function middleware(request: NextRequest) {
+// Kasir (role staff) hanya fokus transaksi: redirect kalau akses menu di luar
+// kasir (members/kelas/produk/pengaturan/staff/laporan/...). Admin/owner bebas.
+const KASIR_BOLEH = (p: string) =>
+  p.startsWith('/dashboard') || p.startsWith('/payments') || p === '/'
+
+export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname
 
   // Allow auth routes, register, and API auth
@@ -35,6 +41,23 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
+  // Gating kasir (role staff): hanya boleh akses halaman transaksi. Baca role
+  // dari JWT NextAuth via getToken (handle salt/JWE otomatis).
+  if (!path.startsWith('/admin')) {
+    try {
+      const token = await getToken({
+        req: request,
+        secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET || '',
+      })
+      const role = (token as any)?.role
+      if (role === 'staff' && !KASIR_BOLEH(path)) {
+        return NextResponse.redirect(new URL('/payments', request.url))
+      }
+    } catch {
+      // malformed token → lanjut; auth server akan tolak kalau tidak sah
+    }
+  }
+
   return NextResponse.next()
 }
 
@@ -49,6 +72,7 @@ export const config = {
     '/payments/:path*',
     '/reports/:path*',
     '/settings/:path*',
+    '/staff/:path*',
     '/admin/:path*',
   ],
 }

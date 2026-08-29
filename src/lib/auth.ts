@@ -99,7 +99,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             token.tenantName = dbUser.tenant.name
             token.tenantSlug = dbUser.tenant.slug
             token.tenantPlan = dbUser.tenant.plan
-            token.joinToken = dbUser.tenant.joinToken
+            token.joinToken = dbUser.tenant.joinToken ?? undefined
             token.tenantPlanExpires = dbUser.tenant.planExpires
               ? (dbUser.tenant.planExpires as Date).toISOString()
               : null
