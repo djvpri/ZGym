@@ -8,5 +8,6 @@ export function computeStatus(member: { status: string | null; expiryDate: Date 
   if (member.status === 'active' && member.expiryDate && member.expiryDate.getTime() <= Date.now()) {
     return 'expired'
   }
-  return member.status || 'active'
+  // status null/empty = member baru yg belum diaktifkan membership → 'inactive'
+  return member.status || 'inactive'
 }

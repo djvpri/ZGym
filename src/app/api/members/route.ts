@@ -51,6 +51,7 @@ export async function POST(req: NextRequest) {
       tenantId,
       memberNumber,
       name: body.name,
+      status: 'inactive', // member baru BELUM aktif sampai membership diaktifkan
       email: body.email || null,
       phone: body.phone || null,
       address: body.address || null,
