@@ -2,11 +2,14 @@
 
 import { useEffect, useState } from 'react'
 import { NOTA_DESIGNS, NOTA_CSS } from '@/lib/notaDesign'
+import { WEEKDAYS, WEEKDAY_LABEL, parseDaypass, DEFAULT_DAYPASS, type DaypassConfig } from '@/lib/daypass'
 
 function formatRp(n: number) { return 'Rp ' + n.toLocaleString('id-ID') }
 
 export default function SettingsPage() {
   const [settings, setSettings] = useState<any>({})
+  const [daypassCfg, setDaypassCfg] = useState<DaypassConfig>(DEFAULT_DAYPASS)
+  const [newHoliday, setNewHoliday] = useState('')
   const [plans, setPlans] = useState<any[]>([])
   const [newPlan, setNewPlan] = useState({ name: '', description: '', duration: 30, price: 0 })
   const [instructors, setInstructors] = useState<any[]>([])
@@ -14,10 +17,13 @@ export default function SettingsPage() {
   const [editPlan, setEditPlan] = useState<any>(null)
   const [editInstructor, setEditInstructor] = useState<any>(null)
   const [saving, setSaving] = useState(false)
-  const [tab, setTab] = useState<'gym' | 'plans' | 'instructors' | 'nota'>('gym')
+  const [tab, setTab] = useState<'gym' | 'plans' | 'instructors' | 'nota' | 'daypass'>('gym')
 
   useEffect(() => {
-    fetch('/api/settings').then(r => r.json()).then(setSettings)
+    fetch('/api/settings').then(r => r.json()).then(s => {
+      setSettings(s)
+      setDaypassCfg(parseDaypass(s.daypass))
+    })
     fetch('/api/membership-plans').then(r => r.json()).then(setPlans)
     fetch('/api/instructors').then(r => r.json()).then(setInstructors)
   }, [])
@@ -27,6 +33,16 @@ export default function SettingsPage() {
     await fetch('/api/settings', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(settings) })
     setSaving(false)
     alert('Tersimpan!')
+  }
+
+  const saveDaypass = async () => {
+    setSaving(true)
+    await fetch('/api/settings', {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ daypass: JSON.stringify(daypassCfg) }),
+    })
+    setSaving(false)
+    alert('Pengaturan day pass tersimpan!')
   }
 
   const addPlan = async (e: React.FormEvent) => {
@@ -84,7 +100,7 @@ export default function SettingsPage() {
 
       {/* Tabs */}
       <div className="flex gap-2">
-        {[{ key: 'gym', label: 'Info Gym' }, { key: 'plans', label: 'Paket Membership' }, { key: 'instructors', label: 'Instruktur' }, { key: 'nota', label: 'Desain Nota' }].map((t) => (
+        {[{ key: 'gym', label: 'Info Gym' }, { key: 'plans', label: 'Paket Membership' }, { key: 'instructors', label: 'Instruktur' }, { key: 'nota', label: 'Desain Nota' }, { key: 'daypass', label: 'Day Pass' }].map((t) => (
           <button key={t.key} onClick={() => setTab(t.key as any)}
             className={`px-4 py-2 rounded-lg text-sm font-medium ${tab === t.key ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
             {t.label}
@@ -282,6 +298,58 @@ export default function SettingsPage() {
           </div>
           <button onClick={saveSettings} disabled={saving} className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50">
             {saving ? 'Menyimpan...' : 'Simpan'}
+          </button>
+        </div>
+      )}
+
+      {/* Day Pass */}
+      {tab === 'daypass' && (
+        <div className="bg-white rounded-xl p-6 shadow-sm border space-y-5 max-w-lg">
+          <div>
+            <h3 className="font-semibold mb-1">Harga Day Pass</h3>
+            <p className="text-xs text-gray-500">Tarif masuk harian per hari dalam seminggu. Kosongkan jika ingin pakai harga default.</p>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            {WEEKDAYS.map((d) => (
+              <div key={d}>
+                <label className="block text-xs font-medium text-gray-600 mb-1">{WEEKDAY_LABEL[d]}</label>
+                <input type="number" min={0} value={daypassCfg.prices[d] ?? ''} onChange={(e) => {
+                  const v = e.target.value === '' ? undefined : Number(e.target.value)
+                  setDaypassCfg({ ...daypassCfg, prices: { ...daypassCfg.prices, [d]: v } })
+                }} placeholder="Opsional" className="w-full px-3 py-2 border rounded-lg" />
+              </div>
+            ))}
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Harga Hari Libur</label>
+              <input type="number" min={0} value={daypassCfg.holidayPrice || ''} onChange={(e) => setDaypassCfg({ ...daypassCfg, holidayPrice: Number(e.target.value) || 0 })} placeholder="Tarif khusus tanggal libur" className="w-full px-3 py-2 border rounded-lg" />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Harga Default</label>
+              <input type="number" min={0} value={daypassCfg.default || ''} onChange={(e) => setDaypassCfg({ ...daypassCfg, default: Number(e.target.value) || 0 })} placeholder="Tarif hari tak ter-set" className="w-full px-3 py-2 border rounded-lg" />
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Tanggal Libur (dikenakan harga hari libur)</label>
+            <div className="flex gap-2 mb-2">
+              <input type="date" value={newHoliday} onChange={(e) => setNewHoliday(e.target.value)} className="px-3 py-2 border rounded-lg" />
+              <button type="button" onClick={() => {
+                if (newHoliday && !daypassCfg.holidays.includes(newHoliday)) setDaypassCfg({ ...daypassCfg, holidays: [...daypassCfg.holidays, newHoliday] })
+                setNewHoliday('')
+              }} className="px-3 py-2 rounded-lg bg-gray-100 text-sm">Tambah</button>
+            </div>
+            <div className="space-y-1">
+              {daypassCfg.holidays.length === 0 ? <p className="text-xs text-gray-400">Belum ada tanggal libur.</p> : daypassCfg.holidays.map((h) => (
+                <div key={h} className="flex justify-between items-center text-sm bg-gray-50 px-3 py-1.5 rounded-lg">
+                  <span>{h}</span>
+                  <button type="button" onClick={() => setDaypassCfg({ ...daypassCfg, holidays: daypassCfg.holidays.filter((x) => x !== h) })} className="text-red-500 text-xs">Hapus</button>
+                </div>
+              ))}
+            </div>
+          </div>
+          <button onClick={saveDaypass} disabled={saving} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium disabled:opacity-50">
+            {saving ? 'Menyimpan...' : 'Simpan Day Pass'}
           </button>
         </div>
       )}

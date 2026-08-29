@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { NOTA_CSS, isNotaDesign } from '@/lib/notaDesign'
+import { parseDaypass, daypassPriceFor, DEFAULT_DAYPASS, type DaypassConfig } from '@/lib/daypass'
 
 function formatRp(n: number) { return 'Rp ' + n.toLocaleString('id-ID') }
 
@@ -29,13 +30,13 @@ export default function NewPaymentPage() {
   const [receipt, setReceipt] = useState<Receipt | null>(null)
   const [notaDesign, setNotaDesign] = useState<string>('classic')
   const [notaFooter, setNotaFooter] = useState('')
+  const [daypassCfg, setDaypassCfg] = useState<DaypassConfig>(DEFAULT_DAYPASS)
 
   useEffect(() => {
     fetch('/api/settings').then(r => r.json()).then(s => {
-      if (s) {
-        if (isNotaDesign(s.nota_design)) setNotaDesign(s.nota_design)
-        setNotaFooter(s.nota_footer || '')
-      }
+      if (s && isNotaDesign(s.nota_design)) setNotaDesign(s.nota_design)
+      setNotaFooter(s.nota_footer || '')
+      setDaypassCfg(parseDaypass(s.daypass))
     }).catch(() => {})
   }, [])
 
@@ -156,7 +157,12 @@ export default function NewPaymentPage() {
           )}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Tipe Pembayaran</label>
-            <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })} className="w-full px-3 py-2 border rounded-lg">
+            <select value={form.type} onChange={(e) => {
+              const t = e.target.value
+              // Auto-fill harga day pass utk hari ini saat pilih tipe Day Pass
+              const extra = t === 'day_pass' ? { amount: daypassPriceFor(new Date(), daypassCfg) } : {}
+              setForm({ ...form, type: t, ...extra })
+            }} className="w-full px-3 py-2 border rounded-lg">
               {payFor === 'member' && <option value="membership">Membership</option>}
               <option value="day_pass">Day Pass (Masuk Harian)</option>
               <option value="pt_session">Personal Training</option>
