@@ -8,6 +8,12 @@ export async function GET() {
   const settings = await prisma.setting.findMany({ where: { tenantId } })
   const obj: Record<string, string> = {}
   settings.forEach((s) => { obj[s.key] = s.value })
+  const tenant = await prisma.tenant.findUnique({ where: { id: tenantId }, select: { name: true, address: true, phone: true } })
+  if (tenant) {
+    obj.tenant_name = tenant.name
+    obj.tenant_address = tenant.address || ''
+    obj.tenant_phone = tenant.phone || ''
+  }
   return NextResponse.json(obj)
 }
 

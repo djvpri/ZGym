@@ -28,12 +28,14 @@ export default function PaymentsPage() {
   const [printPayment, setPrintPayment] = useState<any>(null)
   const [notaDesign, setNotaDesign] = useState<string>('classic')
   const [notaFooter, setNotaFooter] = useState('')
+  const [notaTenant, setNotaTenant] = useState({ name: 'ZXgym', address: '', phone: '' })
 
   useEffect(() => {
     fetch('/api/settings').then(r => r.json()).then(s => {
       if (s) {
         if (isNotaDesign(s.nota_design)) setNotaDesign(s.nota_design)
         setNotaFooter(s.nota_footer || '')
+        setNotaTenant({ name: s.tenant_name || 'ZXgym', address: s.tenant_address || '', phone: s.tenant_phone || '' })
       }
     }).catch(() => {})
   }, [])
@@ -49,13 +51,14 @@ export default function PaymentsPage() {
   return (
     <>
       <style>{`
+        @page { size: auto; margin: 0; }
         @media print {
-          /* Sembunyikan semua UI, cetak hanya nota dalam modal print */
+          /* Hapus header/footer browser (URL "http..") & sembunyikan UI */
           body * { visibility: hidden !important; }
           #nota-payment-list, #nota-payment-list * { visibility: visible !important; }
           #nota-payment-list {
-            position: fixed !important; inset: 0 !important;
-            width: 100% !important; max-width: none !important;
+            position: absolute !important; top: 0 !important; left: 0 !important;
+            width: 100% !important; max-width: none !important; height: auto !important;
             margin: 0 !important; padding: 24px !important; background: white !important;
             overflow: visible !important;
             box-shadow: none !important; border-radius: 0 !important;
@@ -135,9 +138,10 @@ export default function PaymentsPage() {
             <div id="nota-payment-list" data-nota-design={notaDesign} className="p-6 text-sm">
               <div className="nota-header">
                 <div className="nota-brand flex items-center justify-center gap-2">
-                  <i className="bi bi-trophy" /> ZXgym
+                  <i className="bi bi-trophy" /> {notaTenant.name}
                 </div>
-                <div className="nota-sub text-xs text-gray-500 mt-1">Gym Management System</div>
+                {notaTenant.address && <div className="nota-sub text-xs text-gray-500 mt-1 text-center">{notaTenant.address}</div>}
+                {notaTenant.phone && <div className="nota-sub text-xs text-gray-500 text-center">{notaTenant.phone}</div>}
                 <div className="nota-block my-3" />
               </div>
 

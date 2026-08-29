@@ -30,6 +30,7 @@ export default function NewPaymentPage() {
   const [receipt, setReceipt] = useState<Receipt | null>(null)
   const [notaDesign, setNotaDesign] = useState<string>('classic')
   const [notaFooter, setNotaFooter] = useState('')
+  const [notaTenant, setNotaTenant] = useState({ name: 'ZXgym', address: '', phone: '' })
   const [daypassCfg, setDaypassCfg] = useState<DaypassConfig>(DEFAULT_DAYPASS)
   const [products, setProducts] = useState<any[]>([])
 
@@ -37,7 +38,8 @@ export default function NewPaymentPage() {
     fetch('/api/settings').then(r => r.json()).then(s => {
       if (s && isNotaDesign(s.nota_design)) setNotaDesign(s.nota_design)
       setNotaFooter(s.nota_footer || '')
-      setDaypassCfg(parseDaypass(s.daypass))
+      setNotaTenant({ name: s.tenant_name || 'ZXgym', address: s.tenant_address || '', phone: s.tenant_phone || '' })
+      if (s?.daypass) setDaypassCfg(parseDaypass(s.daypass))
     }).catch(() => {})
   }, [])
 
@@ -127,13 +129,14 @@ export default function NewPaymentPage() {
   return (
     <>
       <style>{`
+        @page { size: auto; margin: 0; }
         @media print {
-          /* Sembunyikan semua UI, cetak hanya nota dalam modal print */
+          /* Hapus header/footer browser (URL "http..") & sembunyikan UI */
           body * { visibility: hidden !important; }
           #nota-payment, #nota-payment * { visibility: visible !important; }
           #nota-payment {
-            position: fixed !important; inset: 0 !important;
-            width: 100% !important; max-width: none !important;
+            position: absolute !important; top: 0 !important; left: 0 !important;
+            width: 100% !important; max-width: none !important; height: auto !important;
             margin: 0 !important; padding: 24px !important; background: white !important;
             overflow: visible !important;
             box-shadow: none !important; border-radius: 0 !important;
@@ -254,9 +257,10 @@ export default function NewPaymentPage() {
             <div id="nota-payment" data-nota-design={notaDesign} className="p-6 text-sm">
               <div className="nota-header">
                 <div className="nota-brand flex items-center justify-center gap-2">
-                  <i className="bi bi-trophy" /> ZXgym
+                  <i className="bi bi-trophy" /> {notaTenant.name}
                 </div>
-                <div className="nota-sub text-xs text-gray-500 mt-1">Gym Management System</div>
+                {notaTenant.address && <div className="nota-sub text-xs text-gray-500 mt-1 text-center">{notaTenant.address}</div>}
+                {notaTenant.phone && <div className="nota-sub text-xs text-gray-500 text-center">{notaTenant.phone}</div>}
                 <div className="nota-block my-3" />
               </div>
 
