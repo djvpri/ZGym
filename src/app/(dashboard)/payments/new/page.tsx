@@ -142,9 +142,9 @@ export default function NewPaymentPage() {
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Dibayar oleh</label>
             <div className="flex gap-2">
-              <button type="button" onClick={() => setPayFor('member')}
+              <button type="button" onClick={() => { setPayFor('member'); setForm(f => ({ ...f, type: f.type || 'membership' })) }}
                 className={`px-4 py-2 rounded-lg text-sm font-medium ${payFor === 'member' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600'}`}>Member</button>
-              <button type="button" onClick={() => setPayFor('guest')}
+              <button type="button" onClick={() => { setPayFor('guest'); setForm(f => ({ ...f, type: f.type === 'membership' ? '' : f.type })) }}
                 className={`px-4 py-2 rounded-lg text-sm font-medium ${payFor === 'guest' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600'}`}>Guest (tanpa member)</button>
             </div>
           </div>
@@ -170,6 +170,7 @@ export default function NewPaymentPage() {
               const extra = t === 'day_pass' ? { amount: daypassPriceFor(new Date(), daypassCfg) } : {}
               setForm({ ...form, type: t, ...extra })
             }} className="w-full px-3 py-2 border rounded-lg">
+              <option value="">-- Pilih tipe --</option>
               {payFor === 'member' && <option value="membership">Membership</option>}
               <option value="day_pass">Day Pass (Masuk Harian)</option>
               <option value="pt_session">Personal Training</option>
