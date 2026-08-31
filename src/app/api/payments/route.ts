@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireTenant } from '@/lib/tenant'
 import { auth } from '@/lib/auth'
+import { getKasirPerm, isAdminRole } from '@/lib/kasirPerm'
 
 export async function GET(req: NextRequest) {
   const tenantId = await requireTenant()
@@ -13,6 +14,21 @@ export async function GET(req: NextRequest) {
   const where: any = { tenantId }
   if (type) where.type = type
   if (memberId) where.memberId = memberId
+
+  // Kasir dgn scope_shift: cuma lihat pembayaran yg tercatat via shift-nya sendiri.
+  const session = await auth()
+  const role = (session?.user as any)?.role || null
+  const me = (session?.user as any)?.id || null
+  if (!isAdminRole(role) && me) {
+    const perm = await getKasirPerm(tenantId, me)
+    if (perm.scope_shift) {
+      const ownShifts = await prisma.shift.findMany({
+        where: { tenantId, userId: me },
+        select: { id: true },
+      })
+      where.shiftId = { in: ownShifts.map((s) => s.id) }
+    }
+  }
 
   const payments = await prisma.payment.findMany({
     where,
@@ -29,6 +45,15 @@ export async function POST(req: NextRequest) {
   const session = await auth()
   const me = (session?.user as any)?.id || null
   const nama = (session?.user as any)?.name || null
+  const role = (session?.user as any)?.role || null
+
+  // Kasir tanpa izin catat_bayar -> dilarang mencatat pembayaran.
+  if (!isAdminRole(role) && me) {
+    const perm = await getKasirPerm(tenantId, me)
+    if (!perm.catat_bayar) {
+      return NextResponse.json({ error: 'Anda tidak diizinkan mencatat pembayaran.' }, { status: 403 })
+    }
+  }
 
   // Attach shift kasir aktif (kalau ada) + siapa yg catat pembayaran.
   let shiftId: string | null = null

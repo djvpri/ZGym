@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
-import bcrypt from 'bcryptjs'
+import { getKasirPerm, kasirPermKey } from '@/lib/kasirPerm'
 
 // Daftar & kelola staff (kasir/admin) satu gym. Konsep Z1 POS: admin atur role &
 // status. Akun DIBUAT lewat Z One (cross-app create), di sini cuma atur hak.
@@ -16,5 +16,13 @@ export async function GET(req: NextRequest) {
     select: { id: true, name: true, email: true, role: true, isActive: true, createdAt: true },
     orderBy: { createdAt: 'asc' },
   })
-  return NextResponse.json(staff)
+
+  // Sertakan izin kasir utk tiap role staff (kasir) supaya modal Akses bisa baca.
+  const out = []
+  for (const u of staff) {
+    const isKasir = String(u.role).toLowerCase() === 'staff'
+    const perm = isKasir ? await getKasirPerm(tenantId, u.id) : null
+    out.push({ ...u, perm, permKey: isKasir ? kasirPermKey(u.id) : null })
+  }
+  return NextResponse.json(out)
 }
