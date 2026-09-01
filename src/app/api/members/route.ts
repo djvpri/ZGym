@@ -3,9 +3,12 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireTenant } from '@/lib/tenant'
 import { computeStatus } from '@/lib/memberStatus'
+import { kasirModulGuard } from '@/lib/kasirPerm'
+
 
 export async function GET(req: NextRequest) {
   const tenantId = await requireTenant()
+  const g = await kasirModulGuard(tenantId, 'members'); if (g) return g
   const { searchParams } = new URL(req.url)
   const search = searchParams.get('search') || ''
   const status = searchParams.get('status') || ''
@@ -34,6 +37,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   const tenantId = await requireTenant()
+  const g = await kasirModulGuard(tenantId, 'members'); if (g) return g
   const body = await req.json()
 
   // Auto-generate member number (per tenant)
@@ -65,3 +69,4 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json(member, { status: 201 })
 }
+

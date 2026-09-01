@@ -2,9 +2,12 @@ export const dynamic = "force-dynamic"
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireTenant } from '@/lib/tenant'
+import { kasirModulGuard } from '@/lib/kasirPerm'
+
 
 export async function GET(req: NextRequest) {
   const tenantId = await requireTenant()
+  const g = await kasirModulGuard(tenantId, 'reports'); if (g) return g
   const now = new Date()
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
   const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0)
@@ -83,3 +86,4 @@ export async function GET(req: NextRequest) {
     paymentsByType,
   })
 }
+

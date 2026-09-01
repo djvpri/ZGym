@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { useState, useEffect } from 'react'
 import { signOut, useSession } from 'next-auth/react'
 import { getDesktopVersion } from '@/lib/escpos'
@@ -31,14 +31,39 @@ const PLAN_BADGES: Record<string, string> = {
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
+  const router = useRouter()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const { data: session } = useSession()
   const user = session?.user as any
   const [desktopVersion, setDesktopVersion] = useState('')
+  const [kasirMenu, setKasirMenu] = useState<string[] | null>(null)
 
   useEffect(() => {
     getDesktopVersion().then(setDesktopVersion)
+    fetch('/api/kasir-menu').then(r => r.json()).then(d => {
+      // d.menu = string[] utk staff, null utk admin/owner
+      setKasirMenu(Array.isArray(d.menu) ? d.menu : null)
+    }).catch(() => setKasirMenu(null))
   }, [])
+
+  const isKasir = String(user?.role).toLowerCase() === 'staff'
+  const modulOf = (href: string) => href.split('/').filter(Boolean)[0] || ''
+
+  // Kalau kasir sedang di halaman modul yg tak diizinkan -> lintas ke modul pertama yg diizinkan.
+  useEffect(() => {
+    if (isKasir && Array.isArray(kasirMenu) && kasirMenu.length) {
+      const cur = modulOf(pathname)
+      if (cur && !kasirMenu.includes(cur)) {
+        const dest = kasirMenu.includes('payments') ? '/payments' : `/dashboard`
+        router.replace(dest)
+      }
+    }
+  }, [isKasir, kasirMenu, pathname]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const shown =
+    isKasir && Array.isArray(kasirMenu)
+      ? menuItems.filter(m => kasirMenu.includes(modulOf(m.href)))
+      : menuItems
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
@@ -70,9 +95,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
 
         <nav className="px-4 space-y-0.5 flex-1 overflow-y-auto min-h-0 pb-2">
-          {(String(user?.role).toLowerCase() === 'staff'
-            ? menuItems.filter(m => m.kasir)
-            : menuItems).map((item) => {
+          {shown.map((item) => {
             const isActive = pathname === item.href
             return (
               <Link

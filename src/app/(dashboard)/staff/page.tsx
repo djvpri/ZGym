@@ -1,16 +1,23 @@
 'use client'
 import { useEffect, useState } from 'react'
 
-type Perm = { catat_bayar: boolean; hapus_nota: boolean; kelola_shift: boolean; scope_shift: boolean }
+type Perm = { catat_bayar: boolean; hapus_nota: boolean; kelola_shift: boolean; scope_shift: boolean; menu: string[] }
 const PERM_LABEL: Record<keyof Perm, string> = {
   catat_bayar: 'Catat pembayaran',
   hapus_nota: 'Hapus nota',
   kelola_shift: 'Buka/tutup shift',
   scope_shift: 'Hanya lihat pembayaran shift sendiri',
+  menu: 'Tab yang boleh diakses',
+}
+const ALL_MODULS = ['dashboard','members','classes','schedule','attendance','pt','payments','products','reports','ai','lisensi','staff','settings']
+const MODUL_LABEL: Record<string,string> = {
+  dashboard:'Dashboard', members:'Members', classes:'Kelas', schedule:'Jadwal',
+  attendance:'Absensi', pt:'Personal Training', payments:'Pembayaran', products:'Produk',
+  reports:'Laporan', ai:'AI', lisensi:'Lisensi', staff:'Staff', settings:'Pengaturan',
 }
 type Staff = { id: string; name: string; email: string; role: string; isActive: boolean; perm?: Perm | null; permKey?: string | null }
 
-const DEFAULT_PERM: Perm = { catat_bayar: true, hapus_nota: false, kelola_shift: true, scope_shift: true }
+const DEFAULT_PERM: Perm = { catat_bayar: true, hapus_nota: false, kelola_shift: true, scope_shift: true, menu: ['dashboard','payments'] }
 
 export default function StaffPage() {
   const [staff, setStaff] = useState<Staff[]>([])
@@ -69,6 +76,11 @@ export default function StaffPage() {
     setAksesTarget(u)
   }
   const togglePerm = (k: keyof Perm) => setAksesDraft(d => ({ ...d, [k]: !d[k] }))
+  const toggleMenu = (m: string) => setAksesDraft(d => ({
+    ...d,
+    menu: d.menu.includes(m) ? d.menu.filter(x => x !== m) : [...d.menu, m],
+  }))
+  const BOOL_KEYS = (Object.keys(PERM_LABEL) as (keyof Perm)[]).filter(k => k !== 'menu')
   const saveAkses = async () => {
     if (!aksesTarget || !aksesTarget.permKey) return
     setSaving(true)
@@ -162,13 +174,31 @@ export default function StaffPage() {
             </div>
             <div className="px-5 py-4 space-y-2">
               <p className="text-xs text-gray-400 mb-3">Centang izin yang boleh dilakukan {aksesTarget.name} di aplikasi.</p>
-              {(Object.keys(PERM_LABEL) as (keyof Perm)[]).map(k => (
+              {BOOL_KEYS.map(k => (
                 <label key={k} className="flex items-center justify-between gap-3 cursor-pointer rounded-xl border border-gray-100 px-3 py-2.5 hover:border-blue-200">
                   <span className="text-sm text-gray-700">{PERM_LABEL[k]}</span>
-                  <input type="checkbox" checked={aksesDraft[k]} onChange={() => togglePerm(k)}
+                  <input type="checkbox" checked={aksesDraft[k] as boolean} onChange={() => togglePerm(k)}
                     className="w-4 h-4 accent-blue-600" />
                 </label>
               ))}
+            </div>
+            <div className="px-5 pb-2">
+              <p className="text-xs font-medium text-gray-500 mb-2">Tab yang boleh diakses kasir</p>
+            </div>
+            <div className="px-5 pb-4">
+              <div className="grid grid-cols-2 gap-2">
+                {ALL_MODULS.map(m => {
+                  const on = aksesDraft.menu.includes(m)
+                  return (
+                    <button key={m} type="button" onClick={() => toggleMenu(m)}
+                      className={`flex items-center justify-between gap-2 px-3 py-2 rounded-xl text-sm border transition-colors ${on ? 'border-blue-300 bg-blue-50 text-blue-700' : 'border-gray-100 text-gray-500 hover:border-gray-200'}`}>
+                      <span>{MODUL_LABEL[m]}</span>
+                      <i className={`bi bi-check2 ${on ? 'opacity-100' : 'opacity-0'}`} />
+                    </button>
+                  )
+                })}
+              </div>
+              <p className="text-[11px] text-gray-400 mt-2">Pilih tab/menu yang boleh dilihat kasir. Sidebar & redirect langsung menyesuaikan; akses API juga diblokir per-menuju otorisasi.</p>
             </div>
             <div className="flex items-center justify-end gap-2 border-t border-gray-100 px-5 py-4">
               <button onClick={() => setAksesTarget(null)} className="px-3 py-2 text-sm text-gray-500 hover:text-gray-700">Batal</button>

@@ -1,11 +1,10 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
-import { getToken } from 'next-auth/jwt'
 
-// Kasir (role staff) hanya fokus transaksi: redirect kalau akses menu di luar
-// kasir (members/kelas/produk/pengaturan/staff/laporan/...). Admin/owner bebas.
-const KASIR_BOLEH = (p: string) =>
-  p.startsWith('/dashboard') || p.startsWith('/payments') || p === '/'
+// Middleware hanya menegakkan SESSION (login). Gating KASIR per-modul ditangani
+// oleh (a) layout client redirect + render sidebar (dari /api/kasir-menu, live),
+// dan (b) guard API per-route (lib/kasirPerm.requireKasirModul) = keamanan nyata.
+// Kasir boleh membuka path apa pun di sini; data tetap terproteksi di layer API.
 
 export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname
@@ -39,23 +38,6 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL('/admin', request.url))
     }
     return NextResponse.redirect(new URL('/login', request.url))
-  }
-
-  // Gating kasir (role staff): hanya boleh akses halaman transaksi. Baca role
-  // dari JWT NextAuth via getToken (handle salt/JWE otomatis).
-  if (!path.startsWith('/admin')) {
-    try {
-      const token = await getToken({
-        req: request,
-        secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET || '',
-      })
-      const role = (token as any)?.role
-      if (String(role).toLowerCase() === 'staff' && !KASIR_BOLEH(path)) {
-        return NextResponse.redirect(new URL('/payments', request.url))
-      }
-    } catch {
-      // malformed token → lanjut; auth server akan tolak kalau tidak sah
-    }
   }
 
   return NextResponse.next()

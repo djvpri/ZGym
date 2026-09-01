@@ -2,9 +2,12 @@ export const dynamic = "force-dynamic"
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireTenant } from '@/lib/tenant'
+import { kasirModulGuard } from '@/lib/kasirPerm'
+
 
 export async function GET() {
   const tenantId = await requireTenant()
+  const g = await kasirModulGuard(tenantId, 'settings'); if (g) return g
   const settings = await prisma.setting.findMany({ where: { tenantId } })
   const obj: Record<string, string> = {}
   settings.forEach((s) => { obj[s.key] = s.value })
@@ -19,6 +22,7 @@ export async function GET() {
 
 export async function PUT(req: NextRequest) {
   const tenantId = await requireTenant()
+  const g = await kasirModulGuard(tenantId, 'settings'); if (g) return g
   const body = await req.json()
   for (const [key, value] of Object.entries(body)) {
     await prisma.setting.upsert({
@@ -29,3 +33,4 @@ export async function PUT(req: NextRequest) {
   }
   return NextResponse.json({ success: true })
 }
+
