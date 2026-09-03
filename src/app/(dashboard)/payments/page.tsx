@@ -22,6 +22,33 @@ const typeColors: Record<string, string> = {
   day_pass: 'bg-orange-100 text-orange-700',
 }
 
+// Dropdown jam (0–23) & menit (0–59, step 15), pengganti <input type="time"> yang
+// formatnya ikut OS/browser & bisa tampil AM/PM. Nilai sisa "HH:mm".
+const MENIT = [0, 15, 30, 45]
+function SelRentang({ label, val, setVal, disabled }: { label: string; val: string; setVal: (s: string) => void; disabled: boolean }) {
+  const pad2 = (n: number) => String(n).padStart(2, '0')
+  const hh = val ? val.slice(0, 2) : ''
+  const mm = val ? val.slice(3, 5) : ''
+  const g = (h: string, m: string) => setVal(h && m ? `${h}:${m}` : '')
+  const cls = `px-1.5 py-1 border rounded-lg text-sm text-center ${disabled ? 'bg-gray-100 text-gray-400' : 'bg-white text-gray-900'}`
+  return (
+    <label className="flex flex-col text-xs text-gray-500">
+      {label}
+      <span className="mt-1 flex items-center gap-1">
+        <select value={hh} disabled={disabled} onChange={(e) => g(e.target.value, mm)} className={cls}>
+          <option value="">--</option>
+          {Array.from({ length: 24 }, (_, i) => <option key={i} value={pad2(i)}>{pad2(i)}</option>)}
+        </select>
+        <span className={disabled ? 'text-gray-300' : 'text-gray-400'}>:</span>
+        <select value={mm} disabled={disabled} onChange={(e) => g(hh, e.target.value)} className={cls}>
+          <option value="">--</option>
+          {MENIT.map((m) => <option key={m} value={pad2(m)}>{pad2(m)}</option>)}
+        </select>
+      </span>
+    </label>
+  )
+}
+
 export default function PaymentsPage() {
   const [payments, setPayments] = useState<any[]>([])
   const [typeFilter, setTypeFilter] = useState('')
@@ -155,16 +182,8 @@ export default function PaymentsPage() {
             <input type="date" value={date} onChange={(e) => setDate(e.target.value)}
               className="mt-1 px-2 py-1.5 border rounded-lg text-sm text-gray-900" />
           </label>
-          <label className="flex flex-col text-xs text-gray-500">
-            Jam dari
-            <input type="time" value={from} onChange={(e) => setFrom(e.target.value)} disabled={!date}
-              className="mt-1 px-2 py-1.5 border rounded-lg text-sm text-gray-900 disabled:bg-gray-100 disabled:text-gray-400" />
-          </label>
-          <label className="flex flex-col text-xs text-gray-500">
-            s/d
-            <input type="time" value={to} onChange={(e) => setTo(e.target.value)} disabled={!date}
-              className="mt-1 px-2 py-1.5 border rounded-lg text-sm text-gray-900 disabled:bg-gray-100 disabled:text-gray-400" />
-          </label>
+          <SelRentang label="Jam dari" val={from} setVal={setFrom} disabled={!date} />
+          <SelRentang label="s/d" val={to} setVal={setTo} disabled={!date} />
           <div className="flex gap-2 pt-1">
             <button type="button" onClick={() => { setDate(isoLocal(new Date())); setFrom(''); setTo('') }}
               className={`px-3 py-1.5 rounded-lg text-sm ${date === isoLocal(new Date()) && !from && !to ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>Hari ini</button>
