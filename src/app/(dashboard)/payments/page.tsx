@@ -29,18 +29,20 @@ function SelRentang({ label, val, setVal, disabled }: { label: string; val: stri
   const pad2 = (n: number) => String(n).padStart(2, '0')
   const hh = val ? val.slice(0, 2) : ''
   const mm = val ? val.slice(3, 5) : ''
-  const g = (h: string, m: string) => setVal(h && m ? `${h}:${m}` : '')
+  // Set nilai valid begitu salah satu side dipilih: jam kosong → 00, menit kosong → :00.
+  const pick = (h: string) => setVal(h === '' ? '' : `${h}:${mm || '00'}`)
+  const pickM = (m: string) => setVal(m === '' ? '' : `${hh || '00'}:${m}`)
   const cls = `px-1.5 py-1 border rounded-lg text-sm text-center ${disabled ? 'bg-gray-100 text-gray-400' : 'bg-white text-gray-900'}`
   return (
     <label className="flex flex-col text-xs text-gray-500">
       {label}
       <span className="mt-1 flex items-center gap-1">
-        <select value={hh} disabled={disabled} onChange={(e) => g(e.target.value, mm)} className={cls}>
+        <select value={hh} disabled={disabled} onChange={(e) => pick(e.target.value)} className={cls}>
           <option value="">--</option>
           {Array.from({ length: 24 }, (_, i) => <option key={i} value={pad2(i)}>{pad2(i)}</option>)}
         </select>
         <span className={disabled ? 'text-gray-300' : 'text-gray-400'}>:</span>
-        <select value={mm} disabled={disabled} onChange={(e) => g(hh, e.target.value)} className={cls}>
+        <select value={mm} disabled={disabled} onChange={(e) => pickM(e.target.value)} className={cls}>
           <option value="">--</option>
           {MENIT.map((m) => <option key={m} value={pad2(m)}>{pad2(m)}</option>)}
         </select>
