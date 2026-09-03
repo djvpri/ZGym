@@ -90,7 +90,32 @@ export default function PaymentsPage() {
     fetch(`/api/payments${q ? '?' + q : ''}`).then(r => r.json()).then(d => { setPayments(d); setLoading(false) })
   }, [typeFilter, date, from, to])
 
-  const total = payments.filter(p => p.status === 'paid').reduce((s, p) => s + Number(p.amount), 0)
+  const paidRows = payments.filter(p => p.status === 'paid')
+  const total = paidRows.reduce((s, p) => s + Number(p.amount), 0)
+  const totalNota = paidRows.length
+  // Rekap per metode bayar (hanya dr range/tipe yang sedang difilter).
+  const methodBreakdown = Object.entries(METHOD_LABEL)
+    .map(([key, label]) => {
+      const rows = paidRows.filter(p => p.method === key)
+      return { label, jumlah: rows.reduce((s, p) => s + Number(p.amount), 0), count: rows.length }
+    })
+    .filter(r => r.count > 0)
+
+  const unduhCsv = () => {
+    const esc = (v: any) => '"' + String(v ?? '').replace(/"/g, '""') + '"'
+    const kepala = ['Tanggal', 'Jam', 'Member', 'Deskripsi', 'Tipe', 'Metode', 'Status', 'Jumlah'].join(';')
+    const baris = paidRows.map(p => [new Date(p.paidAt).toLocaleDateString('id-ID'),
+      new Date(p.paidAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false }),
+      p.member?.name || p.guestName || '-', p.description || '',
+      TYPE_LABEL[p.type] || p.type || '', METHOD_LABEL[p.method] || p.method || '', p.status, Number(p.amount),
+    ].map(esc).join(';'))
+    const csv = '\uFEFF' + [kepala, ...baris].join('\r\n')
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+    const a = document.createElement('a')
+    a.href = URL.createObjectURL(blob)
+    a.download = `pembayaran${date ? '-' + date : ''}.csv`
+    document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(a.href)
+  }
 
   // Cetak nota. Bila di dalam ZXgym desktop (Tauri) → jalur ESC/POS langsung ke
   // printer thermal (winspool RAW, seperti z1-kasir) — hasil tegas, tak buram.
@@ -175,7 +200,13 @@ export default function PaymentsPage() {
             <h1 className="text-xl font-bold">Pembayaran</h1>
             <p className="text-sm text-gray-500">Total: {formatRp(total)}</p>
           </div>
-          <Link href="/payments/new" className="bg-blue-600 text-white px-4 py-2 rounded-lg text-center hover:bg-blue-700">+ Catat Pembayaran</Link>
+          <div className="flex gap-2">
+            <button type="button" onClick={unduhCsv} disabled={totalNota === 0}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-center border border-gray-200 text-gray-700 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed">
+              <i className="bi bi-download" /> Unduh CSV
+            </button>
+            <Link href="/payments/new" className="bg-blue-600 text-white px-4 py-2 rounded-lg text-center hover:bg-blue-700">+ Catat Pembayaran</Link>
+          </div>
         </div>
 
         <div className="flex flex-wrap items-end gap-2 bg-white rounded-xl shadow-sm border p-3">
@@ -251,9 +282,31 @@ export default function PaymentsPage() {
                   </tr>
                 ))}
               </tbody>
+              <tfoot className="font-semibold bg-gray-50 border-t-2 border-gray-200">
+                {totalNota > 0 && (
+                  <tr>
+                    <td colSpan={6} className="px-4 py-2.5 text-right text-gray-500">
+                      Total ({totalNota} nota terbayar)
+                    </td>
+                    <td className="px-4 py-2.5 text-right text-gray-900">{formatRp(total)}</td>
+                    <td />
+                  </tr>
+                )}
+              </tfoot>
             </table>
           </div>
         </div>
+
+        {methodBreakdown.length > 0 && (
+          <div className="bg-white rounded-xl shadow-sm border px-4 py-3 text-sm grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {methodBreakdown.map((m) => (
+              <div key={m.label} className="flex items-center justify-between gap-3 rounded-lg bg-gray-50 px-3 py-2">
+                <span className="text-gray-500"><i className="bi bi-cash-coin mr-1 text-gray-400" />{m.label}</span>
+                <span className="font-semibold whitespace-nowrap">{formatRp(m.jumlah)} <span className="font-normal text-xs text-gray-400">({m.count} nota)</span></span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Modal Nota */}
