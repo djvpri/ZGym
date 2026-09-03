@@ -54,6 +54,25 @@ export default function MembersPage() {
 
   useEffect(() => { fetchMembers() }, [search])
 
+  // Export ke Excel via CSV (BOM + koma/titik dua utk buka rapi di Excel ID).
+  const exportExcel = () => {
+    if (!members.length) { toast.error('Tidak ada data member untuk di-export.'); return }
+    const tgl = (v?: string) => v ? new Date(v).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'
+    const esc = (v: any) => '"' + String(v ?? '').replace(/"/g, '""') + '"'
+    const kepala = ['No. Member', 'Nama', 'Telepon', 'Email', 'Status', 'Bergabung', 'Expired'].join(';')
+    const baris = members.map((m: any) => [
+      m.memberNumber, m.name, m.phone || '-', m.email || '', m.status || '',
+      tgl(m.createdAt), tgl(m.expiryDate),
+    ].map(esc).join(';'))
+    const csv = '\uFEFF' + [kepala, ...baris].join('\r\n')
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+    const a = document.createElement('a')
+    a.href = URL.createObjectURL(blob)
+    a.download = 'member-export.csv'
+    document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(a.href)
+    toast.success(`${members.length} member ter-export ke member-export.csv`)
+  }
+
   return (
     <div className="space-y-4">
       {/* QR / link gabung member — per tenant */}
@@ -112,9 +131,15 @@ export default function MembersPage() {
           onChange={(e) => setSearch(e.target.value)}
           className="px-4 py-2 border rounded-lg w-full sm:w-80"
         />
-        <Link href="/members/new" className="bg-blue-600 text-white px-4 py-2 rounded-lg text-center hover:bg-blue-700 transition">
-          + Tambah Member
-        </Link>
+        <div className="flex gap-2">
+          <button type="button" onClick={exportExcel}
+            className="inline-flex items-center justify-center gap-2 px-4 py-2 border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-100 transition">
+            <i className="bi bi-file-earmark-spreadsheet" /> Unduh Excel
+          </button>
+          <Link href="/members/new" className="bg-blue-600 text-white px-4 py-2 rounded-lg text-center hover:bg-blue-700 transition">
+            + Tambah Member
+          </Link>
+        </div>
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
