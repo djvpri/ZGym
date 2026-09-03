@@ -25,6 +25,9 @@ const typeColors: Record<string, string> = {
 export default function PaymentsPage() {
   const [payments, setPayments] = useState<any[]>([])
   const [typeFilter, setTypeFilter] = useState('')
+  const [date, setDate] = useState('')
+  const [from, setFrom] = useState('')
+  const [to, setTo] = useState('')
   const [loading, setLoading] = useState(true)
   const [printPayment, setPrintPayment] = useState<any>(null)
   const [notaDesign, setNotaDesign] = useState<string>('classic')
@@ -45,11 +48,18 @@ export default function PaymentsPage() {
     }).catch(() => {})
   }, [])
 
+  const pad = (n: number) => String(n).padStart(2, '0')
+  const isoLocal = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+
   useEffect(() => {
     const params = new URLSearchParams()
     if (typeFilter) params.set('type', typeFilter)
-    fetch(`/api/payments?${params}`).then(r => r.json()).then(d => { setPayments(d); setLoading(false) })
-  }, [typeFilter])
+    if (date) params.set('date', date)
+    if (from) params.set('from', from)
+    if (to) params.set('to', to)
+    const q = params.toString()
+    fetch(`/api/payments${q ? '?' + q : ''}`).then(r => r.json()).then(d => { setPayments(d); setLoading(false) })
+  }, [typeFilter, date, from, to])
 
   const total = payments.filter(p => p.status === 'paid').reduce((s, p) => s + Number(p.amount), 0)
 
@@ -139,6 +149,36 @@ export default function PaymentsPage() {
           <Link href="/payments/new" className="bg-blue-600 text-white px-4 py-2 rounded-lg text-center hover:bg-blue-700">+ Catat Pembayaran</Link>
         </div>
 
+        <div className="flex flex-wrap items-end gap-2 bg-white rounded-xl shadow-sm border p-3">
+          <label className="flex flex-col text-xs text-gray-500">
+            Tanggal
+            <input type="date" value={date} onChange={(e) => setDate(e.target.value)}
+              className="mt-1 px-2 py-1.5 border rounded-lg text-sm text-gray-900" />
+          </label>
+          <label className="flex flex-col text-xs text-gray-500">
+            Jam dari
+            <input type="time" value={from} onChange={(e) => setFrom(e.target.value)} disabled={!date}
+              className="mt-1 px-2 py-1.5 border rounded-lg text-sm text-gray-900 disabled:bg-gray-100 disabled:text-gray-400" />
+          </label>
+          <label className="flex flex-col text-xs text-gray-500">
+            s/d
+            <input type="time" value={to} onChange={(e) => setTo(e.target.value)} disabled={!date}
+              className="mt-1 px-2 py-1.5 border rounded-lg text-sm text-gray-900 disabled:bg-gray-100 disabled:text-gray-400" />
+          </label>
+          <div className="flex gap-2 pt-1">
+            <button type="button" onClick={() => { setDate(isoLocal(new Date())); setFrom(''); setTo('') }}
+              className={`px-3 py-1.5 rounded-lg text-sm ${date === isoLocal(new Date()) && !from && !to ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>Hari ini</button>
+            <button type="button" onClick={() => { setDate(isoLocal(new Date(Date.now() - 86400000))); setFrom(''); setTo('') }}
+              className={`px-3 py-1.5 rounded-lg text-sm ${date === isoLocal(new Date(Date.now() - 86400000)) && !from && !to ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>Kemarin</button>
+            {(date || from || to) && (
+              <button type="button" onClick={() => { setDate(''); setFrom(''); setTo('') }}
+                className="px-3 py-1.5 rounded-lg text-sm bg-red-50 text-red-600 hover:bg-red-100">
+                <i className="bi bi-x-lg mr-1" />Hapus
+              </button>
+            )}
+          </div>
+        </div>
+
         <div className="flex gap-2">
           {['', 'membership', 'pt_session', 'product', 'other'].map((t) => (
             <button key={t} onClick={() => setTypeFilter(t)}
@@ -170,7 +210,10 @@ export default function PaymentsPage() {
                   <tr><td colSpan={8} className="px-4 py-8 text-center text-gray-400">Tidak ada pembayaran</td></tr>
                 ) : payments.map((p) => (
                   <tr key={p.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3">{new Date(p.paidAt).toLocaleDateString('id-ID')}</td>
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      {new Date(p.paidAt).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' })}
+                      <span className="block text-xs text-gray-400">{new Date(p.paidAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</span>
+                    </td>
                     <td className="px-4 py-3 font-medium">{p.member?.name || p.guestName || '-'}</td>
                     <td className="px-4 py-3">{p.description}</td>
                     <td className="px-4 py-3"><span className={`px-2 py-1 rounded-full text-xs font-medium ${typeColors[p.type] || 'bg-gray-100'}`}>{TYPE_LABEL[p.type] || p.type}</span></td>

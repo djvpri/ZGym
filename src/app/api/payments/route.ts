@@ -5,15 +5,47 @@ import { requireTenant } from '@/lib/tenant'
 import { auth } from '@/lib/auth'
 import { getKasirPerm, isAdminRole } from '@/lib/kasirPerm'
 
+const HOUR = 3_600_000
+
+// Parse "HH:mm" (atau "HH:mm:ss") ke ms sejak tengah malam. null = tak valid.
+function jamKeMs(s: string | null): number | null {
+  if (!s) return null
+  const m = /^([0-9]{1,2}):([0-9]{1,2})(?::([0-9]{1,2}))?$/.exec(s.trim())
+  if (!m) return null
+  const h = +m[1], mi = +m[2], se = m[3] ? +m[3] : 0
+  if (h > 23 || mi > 59 || se > 59) return null
+  return (h * 60 + mi) * 60_000 + se * 1000
+}
+
+// Rentang paidAt utk filter per tanggal (+ opsional jam dari–sampai), zona Asia/Jakarta
+// (UTC+7, tanpa DST). paidAt DB = timestamp UTC; Date ISO "+07:00" menghasilkan instan benar.
+function rentangTanggal(date: string, from: string | null, to: string | null): { gte: Date; lte: Date } | null {
+  if (!date) return null
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return null
+  const base = new Date(`${date}T00:00:00+07:00`)
+  if (Number.isNaN(base.getTime())) return null
+  const fromMs = jamKeMs(from) ?? 0
+  const toMs = jamKeMs(to)
+  if (toMs === null) { // tanpa to → satu hari penuh (00:00 s/d 23:59:59.999 WIB)
+    return { gte: new Date(base.getTime() + fromMs), lte: new Date(base.getTime() + HOUR * 24 - 1) }
+  }
+  return { gte: new Date(base.getTime() + fromMs), lte: new Date(base.getTime() + Math.max(toMs, fromMs)) }
+}
+
 export async function GET(req: NextRequest) {
   const tenantId = await requireTenant()
   const { searchParams } = new URL(req.url)
   const type = searchParams.get('type') || ''
   const memberId = searchParams.get('memberId') || ''
+  const date = searchParams.get('date') || ''
+  const from = searchParams.get('from') || ''
+  const to = searchParams.get('to') || ''
 
   const where: any = { tenantId }
   if (type) where.type = type
   if (memberId) where.memberId = memberId
+  const r = rentangTanggal(date, from || null, to || null)
+  if (r) where.paidAt = r
 
   // Kasir dgn scope_shift: cuma lihat pembayaran yg tercatat via shift-nya sendiri.
   const session = await auth()
@@ -34,7 +66,7 @@ export async function GET(req: NextRequest) {
     where,
     include: { member: true, membership: { include: { plan: true } }, ptSession: true },
     orderBy: { paidAt: 'desc' },
-    take: 200,
+    take: 1000,
   })
   return NextResponse.json(payments)
 }
