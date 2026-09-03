@@ -121,7 +121,7 @@ export default function MemberDetailPage() {
             {member.attendances?.slice(0, 10).map((a: any) => (
               <div key={a.id} className="flex justify-between text-sm">
                 <span>{new Date(a.checkIn).toLocaleDateString('id-ID')}</span>
-                <span className="text-gray-500">{new Date(a.checkIn).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} — {a.checkOut ? new Date(a.checkOut).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '-'}</span>
+                <span className="text-gray-500">{new Date(a.checkIn).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false })} — {a.checkOut ? new Date(a.checkOut).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false }) : '-'}</span>
               </div>
             ))}
             {(!member.attendances || member.attendances.length === 0) && <p className="text-gray-400 text-sm">Belum ada absensi</p>}

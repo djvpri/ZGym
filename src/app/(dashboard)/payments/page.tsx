@@ -212,7 +212,7 @@ export default function PaymentsPage() {
                   <tr key={p.id} className="hover:bg-gray-50">
                     <td className="px-4 py-3 whitespace-nowrap">
                       {new Date(p.paidAt).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' })}
-                      <span className="block text-xs text-gray-400">{new Date(p.paidAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</span>
+                      <span className="block text-xs text-gray-400">{new Date(p.paidAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false })}</span>
                     </td>
                     <td className="px-4 py-3 font-medium">{p.member?.name || p.guestName || '-'}</td>
                     <td className="px-4 py-3">{p.description}</td>

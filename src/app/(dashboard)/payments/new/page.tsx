@@ -186,7 +186,7 @@ export default function NewPaymentPage() {
         const nota: NotaEscPos = {
           tenant: notaTenant,
           tanggal: new Date(r.date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }),
-          jam: new Date(r.date).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
+          jam: new Date(r.date).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false }),
           tipe: (TYPE_LABEL[r.type] || r.type || '-') as string,
           member: r.memberName || '-',
           deskripsi: r.description || '',
@@ -392,7 +392,7 @@ export default function NewPaymentPage() {
                 </div>
                 <div className="nota-row flex justify-between">
                   <span className="text-gray-500">Jam</span>
-                  <span>{new Date(receipt.date).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</span>
+                  <span>{new Date(receipt.date).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false })}</span>
                 </div>
               </div>
 

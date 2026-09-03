@@ -184,8 +184,8 @@ export default function AttendancePage() {
                   <td className="px-4 py-3 font-mono text-xs">{a.member?.memberNumber}</td>
                   <td className="px-4 py-3 font-medium">{a.member?.name}</td>
                   <td className="px-4 py-3 capitalize">{a.method}</td>
-                  <td className="px-4 py-3">{new Date(a.checkIn).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</td>
-                  <td className="px-4 py-3">{a.checkOut ? new Date(a.checkOut).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '-'}</td>
+                  <td className="px-4 py-3">{new Date(a.checkIn).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false })}</td>
+                  <td className="px-4 py-3">{a.checkOut ? new Date(a.checkOut).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false }) : '-'}</td>
                   <td className="px-4 py-3">
                     {!a.checkOut && (
                       <button onClick={() => handleCheckout(a.id)} className="text-orange-600 hover:underline text-sm">Check-out</button>
