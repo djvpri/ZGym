@@ -1,10 +1,49 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useSession } from 'next-auth/react'
 import { toast } from 'react-hot-toast'
 
 const ABSEN_URL = 'https://zone.zomet.my.id/absen/zgym'
+
+const METHOD_LABEL: Record<string, string> = { qr: 'QR', manual: 'Manual' }
+
+/** Chip cepat rentang tanggal. '' = pakai input tanggal manual. */
+const CHIP: { key: string; label: string }[] = [
+  { key: 'hari', label: 'Hari Ini' },
+  { key: 'kemarin', label: 'Kemarin' },
+  { key: '7', label: '7 Hari' },
+  { key: '30', label: '30 Hari' },
+  { key: 'bulan', label: 'Bulan Ini' },
+]
+
+type Urut = 'checkIn' | 'checkOut' | 'name' | 'durasi'
+type Arah = 'asc' | 'desc'
+
+/** Durasi dalam menit. null = belum check-out. */
+function menitDurasi(a: any): number | null {
+  if (!a.checkOut) return null
+  return Math.max(0, Math.round((new Date(a.checkOut).getTime() - new Date(a.checkIn).getTime()) / 60000))
+}
+
+/** "2j 15m" — ringkas untuk tabel. */
+function teksDurasi(a: any): string {
+  const m = menitDurasi(a)
+  if (m === null) return 'masih di gym'
+  const j = Math.floor(m / 60), s = m % 60
+  return j > 0 ? `${j}j ${s}m` : `${s}m`
+}
+
+function jam(iso: string | null): string {
+  if (!iso) return '-'
+  return new Date(iso).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false })
+}
+
+function tanggal(iso: string): string {
+  return new Date(iso).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })
+}
+
+const today = new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
 
 export default function AttendancePage() {
   const { data: session } = useSession()
@@ -16,8 +55,31 @@ export default function AttendancePage() {
   const [copied, setCopied] = useState(false)
   const [downloading, setDownloading] = useState(false)
 
+  // Filter & sort tabel riwayat
+  const [range, setRange] = useState('hari')
+  const [date, setDate] = useState('')
+  const [method, setMethod] = useState('')
+  const [status, setStatus] = useState('')
+  const [q, setQ] = useState('')
+  const [urut, setUrut] = useState<Urut>('checkIn')
+  const [arah, setArah] = useState<Arah>('desc')
+
+  const qs = useMemo(() => {
+    const p = new URLSearchParams()
+    if (range && !date) p.set('range', range)
+    if (date) p.set('date', date)
+    if (method) p.set('method', method)
+    if (status) p.set('status', status)
+    if (q.trim()) p.set('q', q.trim())
+    return p.toString()
+  }, [range, date, method, status, q])
+
   useEffect(() => {
-    fetch('/api/attendance').then(r => r.json()).then(d => { setAttendances(d); setLoading(false) })
+    setLoading(true)
+    fetch(`/api/attendance?${qs}`).then(r => r.json()).then(d => { setAttendances(Array.isArray(d) ? d : []); setLoading(false) })
+  }, [qs])
+
+  useEffect(() => {
     fetch('/api/members?status=active').then(r => r.json()).then(setMembers)
   }, [])
 
@@ -74,7 +136,58 @@ export default function AttendancePage() {
     m.memberNumber.toLowerCase().includes(search.toLowerCase())
   )
 
-  const today = new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+  // Sort client-side: data ≤ 1000 baris, sort di browser gratis.
+  const rows = useMemo(() => {
+    const salinan = [...attendances]
+    const banding = (a: any, b: any): number => {
+      let r = 0
+      if (urut === 'name') r = (a.member?.name || '').localeCompare(b.member?.name || '')
+      else if (urut === 'durasi') {
+        const x = menitDurasi(a), y = menitDurasi(b)
+        // Belum check-out (null) dianggap terlama — sedang berjalan.
+        r = (x === null ? Infinity : x) - (y === null ? Infinity : y)
+      } else if (urut === 'checkOut') {
+        r = new Date(a.checkOut || 0).getTime() - new Date(b.checkOut || 0).getTime()
+      } else r = new Date(a.checkIn).getTime() - new Date(b.checkIn).getTime()
+      return arah === 'asc' ? r : -r
+    }
+    return salinan.sort(banding)
+  }, [attendances, urut, arah])
+
+  const klikUrut = (k: Urut) => {
+    if (urut === k) setArah(arah === 'asc' ? 'desc' : 'asc')
+    else { setUrut(k); setArah(k === 'name' ? 'asc' : 'desc') }
+  }
+
+  const panah = (k: Urut) => urut === k ? (arah === 'asc' ? ' ▲' : ' ▼') : ''
+
+  // Rekap kaki tabel: jumlah hadir + rata-rata durasi (hanya yg sudah check-out).
+  const selesai = rows.filter(a => a.checkOut)
+  const totalMenit = selesai.reduce((s, a) => s + (menitDurasi(a) || 0), 0)
+  const rata = selesai.length ? Math.round(totalMenit / selesai.length) : 0
+  const diDalam = rows.filter(a => !a.checkOut).length
+
+  const unduhCsv = () => {
+    const esc = (v: any) => '"' + String(v ?? '').replace(/"/g, '""') + '"'
+    const kepala = ['Tanggal', 'No. Member', 'Nama', 'Metode', 'Check-in', 'Check-out', 'Durasi (menit)'].join(';')
+    const baris = rows.map(a => [
+      tanggal(a.checkIn), a.member?.memberNumber || '', a.member?.name || '',
+      METHOD_LABEL[a.method] || a.method || '', jam(a.checkIn), a.checkOut ? jam(a.checkOut) : '',
+      menitDurasi(a) ?? '',
+    ].map(esc).join(';'))
+    // BOM wajib: angka & nama Indonesia tak rusak saat dibuka Excel.
+    const csv = '\uFEFF' + [kepala, ...baris].join('\r\n')
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+    const a = document.createElement('a')
+    a.href = URL.createObjectURL(blob)
+    a.download = `absensi-${date || range || 'hari-ini'}.csv`
+    document.body.appendChild(a); a.click(); a.remove()
+    setTimeout(() => URL.revokeObjectURL(a.href), 2000)
+    toast.success(`Absensi ter-unduh: absensi-${date || range || 'hari-ini'}.csv`)
+  }
+
+  const resetFilter = () => { setRange('hari'); setDate(''); setMethod(''); setStatus(''); setQ('') }
+  const adaFilter = date || method || status || q || range !== 'hari'
 
   return (
     <div className="space-y-6">
@@ -156,36 +269,103 @@ export default function AttendancePage() {
         )}
       </div>
 
-      {/* Today's attendance */}
+      {/* Riwayat absensi — filter + sort */}
       <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
-        <div className="px-5 py-3 border-b bg-gray-50 flex justify-between items-center">
-          <h3 className="font-semibold">Absensi Hari Ini</h3>
-          <span className="text-sm text-gray-500">{attendances.length} hadir</span>
+        <div className="px-5 py-3 border-b bg-gray-50 flex justify-between items-center flex-wrap gap-2">
+          <h3 className="font-semibold">Riwayat Absensi</h3>
+          <div className="flex items-center gap-2 flex-wrap">
+            {CHIP.map(c => (
+              <button key={c.key} onClick={() => { setRange(c.key); setDate('') }}
+                className={`text-xs px-3 py-1.5 rounded-lg border transition ${!date && range === c.key
+                  ? 'bg-blue-600 text-white border-blue-600'
+                  : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-100'}`}>
+                {c.label}
+              </button>
+            ))}
+          </div>
         </div>
+
+        {/* Baris filter */}
+        <div className="px-5 py-3 border-b flex flex-wrap items-end gap-3">
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Tanggal</label>
+            <input type="date" value={date} onChange={e => setDate(e.target.value)}
+              className="px-3 py-1.5 border rounded-lg text-sm" />
+          </div>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Metode</label>
+            <select value={method} onChange={e => setMethod(e.target.value)}
+              className="px-3 py-1.5 border rounded-lg text-sm">
+              <option value="">Semua</option>
+              <option value="qr">QR</option>
+              <option value="manual">Manual</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Status</label>
+            <select value={status} onChange={e => setStatus(e.target.value)}
+              className="px-3 py-1.5 border rounded-lg text-sm">
+              <option value="">Semua</option>
+              <option value="didalam">Sedang di gym</option>
+              <option value="pulang">Sudah pulang</option>
+            </select>
+          </div>
+          <div className="flex-1 min-w-[180px]">
+            <label className="block text-xs text-gray-500 mb-1">Cari member</label>
+            <input type="text" value={q} onChange={e => setQ(e.target.value)}
+              placeholder="Nama atau no. member..."
+              className="w-full px-3 py-1.5 border rounded-lg text-sm" />
+          </div>
+          <div className="flex gap-2">
+            {adaFilter && (
+              <button onClick={resetFilter}
+                className="text-xs px-3 py-1.5 bg-gray-100 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-200 transition">
+                Hapus
+              </button>
+            )}
+            <button onClick={unduhCsv} disabled={rows.length === 0}
+              className="text-xs px-3 py-1.5 bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 rounded-lg hover:bg-emerald-500/20 transition disabled:opacity-50">
+              Unduh CSV
+            </button>
+          </div>
+        </div>
+
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="text-left text-gray-500 bg-gray-50">
               <tr>
+                <th className="px-4 py-2">Tanggal</th>
+                <th className="px-4 py-2 cursor-pointer select-none hover:text-gray-800" onClick={() => klikUrut('name')}>
+                  Nama{panah('name')}
+                </th>
                 <th className="px-4 py-2">No. Member</th>
-                <th className="px-4 py-2">Nama</th>
                 <th className="px-4 py-2">Metode</th>
-                <th className="px-4 py-2">Check-in</th>
-                <th className="px-4 py-2">Check-out</th>
+                <th className="px-4 py-2 cursor-pointer select-none hover:text-gray-800" onClick={() => klikUrut('checkIn')}>
+                  Check-in{panah('checkIn')}
+                </th>
+                <th className="px-4 py-2 cursor-pointer select-none hover:text-gray-800" onClick={() => klikUrut('checkOut')}>
+                  Check-out{panah('checkOut')}
+                </th>
+                <th className="px-4 py-2 cursor-pointer select-none hover:text-gray-800" onClick={() => klikUrut('durasi')}>
+                  Durasi{panah('durasi')}
+                </th>
                 <th className="px-4 py-2">Aksi</th>
               </tr>
             </thead>
             <tbody className="divide-y">
               {loading ? (
-                <tr><td colSpan={6} className="px-4 py-8 text-center text-gray-400">Memuat...</td></tr>
-              ) : attendances.length === 0 ? (
-                <tr><td colSpan={6} className="px-4 py-8 text-center text-gray-400">Belum ada absensi hari ini</td></tr>
-              ) : attendances.map((a) => (
+                <tr><td colSpan={8} className="px-4 py-8 text-center text-gray-400">Memuat...</td></tr>
+              ) : rows.length === 0 ? (
+                <tr><td colSpan={8} className="px-4 py-8 text-center text-gray-400">Tidak ada absensi pada rentang ini</td></tr>
+              ) : rows.map((a) => (
                 <tr key={a.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 font-mono text-xs">{a.member?.memberNumber}</td>
+                  <td className="px-4 py-3 text-xs text-gray-600">{tanggal(a.checkIn)}</td>
                   <td className="px-4 py-3 font-medium">{a.member?.name}</td>
-                  <td className="px-4 py-3 capitalize">{a.method}</td>
-                  <td className="px-4 py-3">{new Date(a.checkIn).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false })}</td>
-                  <td className="px-4 py-3">{a.checkOut ? new Date(a.checkOut).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false }) : '-'}</td>
+                  <td className="px-4 py-3 font-mono text-xs">{a.member?.memberNumber}</td>
+                  <td className="px-4 py-3 capitalize">{METHOD_LABEL[a.method] || a.method}</td>
+                  <td className="px-4 py-3">{jam(a.checkIn)}</td>
+                  <td className="px-4 py-3">{jam(a.checkOut)}</td>
+                  <td className="px-4 py-3">{teksDurasi(a)}</td>
                   <td className="px-4 py-3">
                     {!a.checkOut && (
                       <button onClick={() => handleCheckout(a.id)} className="text-orange-600 hover:underline text-sm">Check-out</button>
@@ -194,6 +374,17 @@ export default function AttendancePage() {
                 </tr>
               ))}
             </tbody>
+            {!loading && rows.length > 0 && (
+              <tfoot className="bg-gray-50 text-sm">
+                <tr className="font-medium text-gray-700">
+                  <td className="px-4 py-2" colSpan={4}>Total ({rows.length} absensi)</td>
+                  <td className="px-4 py-2" colSpan={2}>{diDalam} masih di gym</td>
+                  <td className="px-4 py-2" colSpan={2}>
+                    Rata-rata {rata >= 60 ? `${Math.floor(rata / 60)}j ${rata % 60}m` : `${rata}m`}
+                  </td>
+                </tr>
+              </tfoot>
+            )}
           </table>
         </div>
       </div>
