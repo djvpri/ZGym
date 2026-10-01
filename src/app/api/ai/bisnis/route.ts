@@ -103,7 +103,10 @@ export async function GET(req: Request) {
 
     const [totalAnggota, anggotaAktif, totalKunjungan] = await Promise.all([
       prisma.member.count({ where: { tenantId } }),
-      prisma.member.count({ where: { tenantId, status: 'active' } }),
+      // "Aktif" = status DB 'active' DAN masa belum habis. Tanpa syarat expiry,
+      // member yg sudah lewat masa tetap terhitung aktif (kolom status statik)
+      // dan angka ini jadi bahan analisis AI yg salah.
+      prisma.member.count({ where: { tenantId, status: 'active', expiryDate: { gt: new Date() } } }),
       prisma.attendance.count({ where: { tenantId, checkIn: { gte: since } } }),
     ])
 

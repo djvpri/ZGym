@@ -31,7 +31,12 @@ export async function GET(req: NextRequest) {
 
   // Total members
   const totalMembers = await prisma.member.count({ where: tenantFilter })
-  const activeMembers = await prisma.member.count({ where: { ...tenantFilter, status: 'active' } })
+  // Hitung "aktif" pakai status DB **DAN** expiry belum lewat. Kolom status di DB
+  // statik ('active' tetap 'active' walau masa habis), jadi tanpa syarat expiry
+  // angka ini menggelembung dibanding halaman Members yg pakai computeStatus().
+  const activeMembers = await prisma.member.count({
+    where: { ...tenantFilter, status: 'active', expiryDate: { gt: now } },
+  })
 
   // Attendance this month
   const attendanceThisMonth = await prisma.attendance.count({

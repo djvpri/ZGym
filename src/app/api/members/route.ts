@@ -22,7 +22,11 @@ export async function GET(req: NextRequest) {
       { phone: { contains: search } },
     ]
   }
-  if (status) where.status = status
+  // Filter status DILAKUKAN SETELAH computeStatus() (lihat bawah), bukan di DB.
+  // Kolom status DB statik: member ber-status 'active' bisa saja sudah lewat masa.
+  // Kalau difilter di DB, `?status=inactive` tak akan menemukan mereka (status DB
+  // msh 'active'), padahal tampilannya 'inactive'. Simpan permintaan di sini.
+  const wantStatus = status
 
   const members = await prisma.member.findMany({
     where,
@@ -32,7 +36,11 @@ export async function GET(req: NextRequest) {
 
   // Override status dgn status dinamis (auto-expire) utk tampilan konsisten di list.
   members.forEach((m: any) => { m.status = computeStatus(m) })
-  return NextResponse.json(members)
+
+  // Filter status di memori, setelah status dinamis dihitung — supaya hasil
+  // konsisten dgn yg ditampilkan (bukan status basi dari DB).
+  const hasil = wantStatus ? members.filter((m: any) => m.status === wantStatus) : members
+  return NextResponse.json(hasil)
 }
 
 export async function POST(req: NextRequest) {
