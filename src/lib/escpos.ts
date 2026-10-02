@@ -98,11 +98,19 @@ const KOLOM = (mm: number): number => 32
 const esc = (s: unknown) => String(s ?? '')
 
 const wrapCenter = (B: string[], s: string, cols: number) => {
-  while (s.length > cols) {
-    B.push('\x1ba\x01' + s.slice(0, cols) + '\n')
-    s = s.slice(cols)
+  // Hormati \n eksplisit dulu, lalu wrap per baris di SPASI (word boundary) —
+  // potongan mentah per-32-char membelah kata ("...pembayaran And" + "a!").
+  for (const baris of String(s ?? '').split('\n')) {
+    let sisa = baris
+    while (sisa.length > cols) {
+      // Cari spasi terakhir ≤ cols; kalau tak ada (kata > cols), potong paksa.
+      let potong = sisa.lastIndexOf(' ', cols)
+      if (potong <= 0) potong = cols
+      B.push('\x1ba\x01' + sisa.slice(0, potong) + '\n')
+      sisa = sisa.slice(potong).replace(/^ +/, '')
+    }
+    if (sisa) B.push('\x1ba\x01' + sisa + '\n')
   }
-  if (s) B.push('\x1ba\x01' + s + '\n')
 }
 
 /** Bangun string byte ESC/POS dari struktur nota ZGym. `mm` = lebar kertas. */
@@ -132,7 +140,9 @@ export function buildEscPos(n: NotaEscPos, mm = 40): string {
   if (n.status) totalLine('Status', esc(n.status))
   line(divider)
 
-  B.push('\x1bE\x01\x1ba\x00' + 'TOTAL' + ' '.repeat(Math.max(1, cols - 5 - esc(n.total).length)) + esc(n.total) + '\x1bE\x00')
+  // \n di akhir wajib — tanpa ini, divider berikutnya tercetak menyambung
+  // di baris yang sama (TOTAL+divider = 64 col → printer wrap → geser samping).
+  B.push('\x1bE\x01\x1ba\x00' + 'TOTAL' + ' '.repeat(Math.max(1, cols - 5 - esc(n.total).length)) + esc(n.total) + '\x1bE\x00\n')
   line(divider)
 
   if (n.footer) wrapCenter(B, esc(n.footer), cols)
