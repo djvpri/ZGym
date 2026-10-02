@@ -34,7 +34,7 @@ const JOIN_CHIPS = [
   { key: 'bulan', label: 'Bulan Ini' },
 ]
 
-type Urut = 'name' | 'memberNumber' | 'joinDate' | 'expiryDate' | 'status'
+type Urut = 'name' | 'memberNumber' | 'joinDate' | 'startDate' | 'expiryDate' | 'status'
 type Arah = 'asc' | 'desc'
 
 export default function MembersPage() {
@@ -109,7 +109,11 @@ export default function MembersPage() {
       let r = 0
       if (urut === 'name') r = (a.name || '').localeCompare(b.name || '')
       else if (urut === 'memberNumber') r = (a.memberNumber || '').localeCompare(b.memberNumber || '')
-      else if (urut === 'expiryDate') {
+      else if (urut === 'startDate') {
+        const x = a.memberships?.[0]?.startDate ? new Date(a.memberships[0].startDate).getTime() : 0
+        const y = b.memberships?.[0]?.startDate ? new Date(b.memberships[0].startDate).getTime() : 0
+        r = x - y
+      } else if (urut === 'expiryDate') {
         const x = a.expiryDate ? new Date(a.expiryDate).getTime() : 0
         const y = b.expiryDate ? new Date(b.expiryDate).getTime() : 0
         r = x - y
@@ -135,10 +139,10 @@ export default function MembersPage() {
     if (!rows.length) { toast.error('Tidak ada data member untuk di-export.'); return }
     const tgl = (v?: string) => v ? new Date(v).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'
     const esc = (v: any) => '"' + String(v ?? '').replace(/"/g, '""') + '"'
-    const kepala = ['No. Member', 'Nama', 'Telepon', 'Email', 'Gender', 'Status', 'Bergabung', 'Expired'].join(';')
+    const kepala = ['No. Member', 'Nama', 'Telepon', 'Email', 'Gender', 'Status', 'Bergabung', 'Mulai', 'Expired'].join(';')
     const baris = rows.map((m: any) => [
       m.memberNumber, m.name, m.phone || '-', m.email || '', m.gender || '-', m.status || '',
-      tgl(m.joinDate), tgl(m.expiryDate),
+      tgl(m.joinDate), tgl(m.memberships?.[0]?.startDate), tgl(m.expiryDate),
     ].map(esc).join(';'))
     const csv = '\uFEFF' + [kepala, ...baris].join('\r\n')
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
@@ -314,6 +318,9 @@ export default function MembersPage() {
                 <th className="px-4 py-3 font-medium cursor-pointer select-none hover:text-gray-800" onClick={() => klikUrut('joinDate')}>
                   Bergabung{panah('joinDate')}
                 </th>
+                <th className="px-4 py-3 font-medium cursor-pointer select-none hover:text-gray-800" onClick={() => klikUrut('startDate')}>
+                  Mulai{panah('startDate')}
+                </th>
                 <th className="px-4 py-3 font-medium cursor-pointer select-none hover:text-gray-800" onClick={() => klikUrut('expiryDate')}>
                   Expired{panah('expiryDate')}
                 </th>
@@ -322,9 +329,9 @@ export default function MembersPage() {
             </thead>
             <tbody className="divide-y">
               {loading ? (
-                <tr><td colSpan={7} className="px-4 py-8 text-center text-gray-400">Memuat...</td></tr>
+                <tr><td colSpan={8} className="px-4 py-8 text-center text-gray-400">Memuat...</td></tr>
               ) : rows.length === 0 ? (
-                <tr><td colSpan={7} className="px-4 py-8 text-center text-gray-400">Tidak ada data member</td></tr>
+                <tr><td colSpan={8} className="px-4 py-8 text-center text-gray-400">Tidak ada data member</td></tr>
               ) : rows.map((m) => (
                 <tr key={m.id} className="hover:bg-gray-50">
                   <td className="px-4 py-3 font-mono text-xs">{m.memberNumber}</td>
@@ -336,6 +343,7 @@ export default function MembersPage() {
                     </span>
                   </td>
                   <td className="px-4 py-3 text-gray-600">{new Date(m.joinDate).toLocaleDateString('id-ID')}</td>
+                  <td className="px-4 py-3 text-gray-600">{m.memberships?.[0]?.startDate ? new Date(m.memberships[0].startDate).toLocaleDateString('id-ID') : '-'}</td>
                   <td className="px-4 py-3 text-gray-600">{m.expiryDate ? new Date(m.expiryDate).toLocaleDateString('id-ID') : '-'}</td>
                   <td className="px-4 py-3">
                     <Link href={`/members/${m.id}`} className="text-blue-600 hover:underline">Detail</Link>
@@ -346,7 +354,7 @@ export default function MembersPage() {
             {!loading && rows.length > 0 && (
               <tfoot className="bg-gray-50 text-sm">
                 <tr className="font-medium text-gray-700">
-                  <td className="px-4 py-2" colSpan={7}>Total {rows.length} member</td>
+                  <td className="px-4 py-2" colSpan={8}>Total {rows.length} member</td>
                 </tr>
               </tfoot>
             )}
