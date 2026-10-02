@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { requireTenant } from '@/lib/tenant'
 import { auth } from '@/lib/auth'
 import { getKasirPerm, isAdminRole } from '@/lib/kasirPerm'
+import { rentangHariIniWib } from '@/lib/masaAktif'
 
 const HOUR = 3_600_000
 
@@ -112,7 +113,7 @@ export async function POST(req: NextRequest) {
     if (product) {
       await tx.product.update({ where: { id: product.id }, data: { stock: { decrement: 1 } } })
     }
-    return tx.payment.create({
+    const created = await tx.payment.create({
       data: {
         tenantId,
         memberId: body.memberId || null,
@@ -132,6 +133,28 @@ export async function POST(req: NextRequest) {
       },
       include: { member: true, product: true },
     })
+
+    // Daypass member → auto check-in (masuk absensi). Sengaja lewat jalur
+    // langsung, bukan gerbang /api/attendance: member expired pun boleh masuk
+    // krn sudah bayar utk hari itu. Guest tak bisa (Attendance butuh Member).
+    if (body.type === 'day_pass' && body.memberId) {
+      const hariIni = rentangHariIniWib()
+      const duplikat = await tx.attendance.findFirst({
+        where: {
+          tenantId,
+          memberId: body.memberId,
+          checkIn: { gte: hariIni.gte, lte: hariIni.lte },
+          checkOut: null,
+        },
+      })
+      if (!duplikat) {
+        await tx.attendance.create({
+          data: { tenantId, memberId: body.memberId, method: 'day_pass' },
+        })
+      }
+    }
+
+    return created
   })
   return NextResponse.json(payment, { status: 201 })
 }
