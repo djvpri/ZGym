@@ -134,22 +134,28 @@ export async function POST(req: NextRequest) {
       include: { member: true, product: true },
     })
 
-    // Daypass member → auto check-in (masuk absensi). Sengaja lewat jalur
-    // langsung, bukan gerbang /api/attendance: member expired pun boleh masuk
-    // krn sudah bayar utk hari itu. Guest tak bisa (Attendance butuh Member).
-    if (body.type === 'day_pass' && body.memberId) {
+    // Daypass → auto check-in (masuk absensi). Sengaja lewat jalur langsung,
+    // bukan gerbang /api/attendance: member expired pun boleh masuk krn sudah
+    // bayar utk hari itu. Guest: attendance dgn guestName (memberId null).
+    if (body.type === 'day_pass') {
       const hariIni = rentangHariIniWib()
-      const duplikat = await tx.attendance.findFirst({
-        where: {
-          tenantId,
-          memberId: body.memberId,
-          checkIn: { gte: hariIni.gte, lte: hariIni.lte },
-          checkOut: null,
-        },
-      })
-      if (!duplikat) {
+      if (body.memberId) {
+        const duplikat = await tx.attendance.findFirst({
+          where: {
+            tenantId,
+            memberId: body.memberId,
+            checkIn: { gte: hariIni.gte, lte: hariIni.lte },
+            checkOut: null,
+          },
+        })
+        if (!duplikat) {
+          await tx.attendance.create({
+            data: { tenantId, memberId: body.memberId, method: 'day_pass' },
+          })
+        }
+      } else if (body.guestName) {
         await tx.attendance.create({
-          data: { tenantId, memberId: body.memberId, method: 'day_pass' },
+          data: { tenantId, guestName: body.guestName, method: 'day_pass' },
         })
       }
     }

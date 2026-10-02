@@ -6,7 +6,7 @@ import { toast } from 'react-hot-toast'
 
 const ABSEN_URL = 'https://zone.zomet.my.id/absen/zgym'
 
-const METHOD_LABEL: Record<string, string> = { qr: 'QR', manual: 'Manual' }
+const METHOD_LABEL: Record<string, string> = { qr: 'QR', manual: 'Manual', day_pass: 'Daypass' }
 
 /** Chip cepat rentang tanggal. '' = pakai input tanggal manual. */
 const CHIP: { key: string; label: string }[] = [
@@ -144,7 +144,7 @@ export default function AttendancePage() {
     const salinan = [...attendances]
     const banding = (a: any, b: any): number => {
       let r = 0
-      if (urut === 'name') r = (a.member?.name || '').localeCompare(b.member?.name || '')
+      if (urut === 'name') r = (a.member?.name || a.guestName || '').localeCompare(b.member?.name || b.guestName || '')
       else if (urut === 'durasi') {
         const x = menitDurasi(a), y = menitDurasi(b)
         // Belum check-out (null) dianggap terlama — sedang berjalan.
@@ -174,7 +174,7 @@ export default function AttendancePage() {
     const esc = (v: any) => '"' + String(v ?? '').replace(/"/g, '""') + '"'
     const kepala = ['Tanggal', 'No. Member', 'Nama', 'Metode', 'Check-in', 'Check-out', 'Durasi (menit)'].join(';')
     const baris = rows.map(a => [
-      tanggal(a.checkIn), a.member?.memberNumber || '', a.member?.name || '',
+      tanggal(a.checkIn), a.member?.memberNumber || '', a.member?.name || a.guestName || '',
       METHOD_LABEL[a.method] || a.method || '', jam(a.checkIn), a.checkOut ? jam(a.checkOut) : '',
       menitDurasi(a) ?? '',
     ].map(esc).join(';'))
@@ -363,8 +363,11 @@ export default function AttendancePage() {
               ) : rows.map((a) => (
                 <tr key={a.id} className="hover:bg-gray-50">
                   <td className="px-4 py-3 text-xs text-gray-600">{tanggal(a.checkIn)}</td>
-                  <td className="px-4 py-3 font-medium">{a.member?.name}</td>
-                  <td className="px-4 py-3 font-mono text-xs">{a.member?.memberNumber}</td>
+                  <td className="px-4 py-3 font-medium">
+                    {a.member?.name || a.guestName || '-'}
+                    {!a.member && a.guestName && <span className="ml-1.5 text-[10px] px-1.5 py-0.5 rounded bg-blue-50 text-blue-600 align-middle">Guest</span>}
+                  </td>
+                  <td className="px-4 py-3 font-mono text-xs">{a.member?.memberNumber || '—'}</td>
                   <td className="px-4 py-3 capitalize">{METHOD_LABEL[a.method] || a.method}</td>
                   <td className="px-4 py-3">{jam(a.checkIn)}</td>
                   <td className="px-4 py-3">{jam(a.checkOut)}</td>

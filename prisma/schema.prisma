@@ -204,15 +204,16 @@ model Booking {
 
 // ─── ATTENDANCE ────────────────────────────────────────
 model Attendance {
-  id       String    @id @default(cuid())
-  tenantId String
-  memberId String
-  checkIn  DateTime  @default(now())
-  checkOut DateTime?
-  method   String    @default("manual") // manual, qr, fingerprint
+  id        String    @id @default(cuid())
+  tenantId  String
+  memberId  String?
+  guestName String? // kunjungan tanpa member (guest daypass)
+  checkIn   DateTime  @default(now())
+  checkOut  DateTime?
+  method    String    @default("manual") // manual, qr, fingerprint, day_pass
 
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  member Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  tenant Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  member Member? @relation(fields: [memberId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
 }

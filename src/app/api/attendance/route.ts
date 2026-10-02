@@ -86,14 +86,13 @@ export async function GET(req: NextRequest) {
   if (status === 'didalam') where.checkOut = null
   if (status === 'pulang') where.checkOut = { not: null }
   if (q) {
-    where.member = {
-      is: {
-        OR: [
-          { name: { contains: q, mode: 'insensitive' } },
-          { memberNumber: { contains: q, mode: 'insensitive' } },
-        ],
-      },
-    }
+    where.OR = [
+      { member: { is: { OR: [
+        { name: { contains: q, mode: 'insensitive' } },
+        { memberNumber: { contains: q, mode: 'insensitive' } },
+      ] } } },
+      { guestName: { contains: q, mode: 'insensitive' } },
+    ]
   }
 
   const attendances = await prisma.attendance.findMany({
