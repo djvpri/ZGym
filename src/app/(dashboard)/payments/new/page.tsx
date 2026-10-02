@@ -443,6 +443,7 @@ export default function NewPaymentPage() {
                   <p key={i}>{line}</p>
                 ))}
               </div>
+              <div className="text-center text-xs text-gray-400 mt-1">Powered by ZXGym</div>
             </div>
 
             <div className="px-6 pb-3">
