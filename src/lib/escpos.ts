@@ -146,7 +146,6 @@ export function buildEscPos(n: NotaEscPos, mm = 40): string {
   line(divider)
 
   if (n.footer) wrapCenter(B, esc(n.footer), cols)
-  center('*** TERIMA KASIH ***')
   center('Powered by ZXGym')
   B.push('\x1ba\x00\n\n\n')
   B.push('\x1dV\x42') // cut partial
