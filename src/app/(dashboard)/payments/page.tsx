@@ -143,6 +143,9 @@ export default function PaymentsPage() {
           tipe: TYPE_LABEL[p.type] || p.type || '-',
           member: p.member?.name || p.guestName || '-',
           deskripsi: p.description || '',
+          paket: p.membership?.plan?.name || undefined,
+          mulai: p.membership?.startDate ? new Date(p.membership.startDate).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : undefined,
+          berakhir: p.membership?.endDate ? new Date(p.membership.endDate).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : undefined,
           metode: METHOD_LABEL[p.method] || p.method || '-',
           status: p.status || '-',
           total,
@@ -345,6 +348,24 @@ export default function PaymentsPage() {
                   <span className="text-gray-500">Deskripsi</span>
                   <span className="text-right truncate max-w-[60%]">{printPayment.description}</span>
                 </div>
+                {printPayment.membership?.plan?.name && (
+                  <div className="nota-row flex justify-between">
+                    <span className="text-gray-500">Paket</span>
+                    <span>{printPayment.membership.plan.name}</span>
+                  </div>
+                )}
+                {printPayment.membership?.startDate && (
+                  <div className="nota-row flex justify-between">
+                    <span className="text-gray-500">Mulai</span>
+                    <span>{new Date(printPayment.membership.startDate).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
+                  </div>
+                )}
+                {printPayment.membership?.endDate && (
+                  <div className="nota-row flex justify-between">
+                    <span className="text-gray-500">Berakhir</span>
+                    <span>{new Date(printPayment.membership.endDate).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
+                  </div>
+                )}
                 <div className="nota-row flex justify-between">
                   <span className="text-gray-500">Metode</span>
                   <span>{METHOD_LABEL[printPayment.method] || printPayment.method}</span>

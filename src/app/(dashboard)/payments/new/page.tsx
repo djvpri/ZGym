@@ -19,6 +19,7 @@ const METHOD_LABEL: Record<string, string> = {
 type Receipt = {
   memberName: string; type: string; description: string
   planName?: string; amount: number; method: string; notes: string; date: string
+  startDate?: string; endDate?: string
 }
 
 export default function NewPaymentPage() {
@@ -128,6 +129,8 @@ export default function NewPaymentPage() {
 
     const isGuest = payFor === 'guest'
     let membershipId = null
+    let membershipStart: string | undefined
+    let membershipEnd: string | undefined
     // Hanya member yg bisa aktifkan membership (butuh Member utk update expiry/status).
     if (!isGuest && form.type === 'membership' && form.membershipPlanId) {
       const memRes = await fetch('/api/memberships', {
@@ -138,6 +141,8 @@ export default function NewPaymentPage() {
       if (memRes.ok) {
         const mem = await memRes.json()
         membershipId = mem.id
+        membershipStart = mem.startDate
+        membershipEnd = mem.endDate
       }
     }
 
@@ -159,6 +164,8 @@ export default function NewPaymentPage() {
       method: form.method,
       notes: form.notes,
       date: new Date().toISOString(),
+      startDate: membershipStart,
+      endDate: membershipEnd,
     })
   }
 
@@ -191,6 +198,8 @@ export default function NewPaymentPage() {
           member: r.memberName || '-',
           deskripsi: r.description || '',
           paket: r.planName || '',
+          mulai: r.startDate ? new Date(r.startDate).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : undefined,
+          berakhir: r.endDate ? new Date(r.endDate).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : undefined,
           metode: (METHOD_LABEL[r.method] || r.method || '-') as string,
           total: formatRp(Number(r.amount)),
           footer: notaFooter || 'Terima kasih atas pembayaran Anda!',
@@ -415,6 +424,18 @@ export default function NewPaymentPage() {
                   <div className="nota-row flex justify-between">
                     <span className="text-gray-500">Paket</span>
                     <span>{receipt.planName}</span>
+                  </div>
+                )}
+                {receipt.startDate && (
+                  <div className="nota-row flex justify-between">
+                    <span className="text-gray-500">Mulai</span>
+                    <span>{new Date(receipt.startDate).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
+                  </div>
+                )}
+                {receipt.endDate && (
+                  <div className="nota-row flex justify-between">
+                    <span className="text-gray-500">Berakhir</span>
+                    <span>{new Date(receipt.endDate).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
                   </div>
                 )}
                 <div className="nota-row flex justify-between">

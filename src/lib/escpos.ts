@@ -17,6 +17,8 @@ export type NotaEscPos = {
   member: string
   deskripsi: string
   paket?: string
+  mulai?: string       // tanggal mulai membership (sudah format "02 Okt 2026")
+  berakhir?: string    // tanggal berakhir membership
   metode: string
   status?: string
   total: string // sudah format 'Rp 35.000'
@@ -136,6 +138,8 @@ export function buildEscPos(n: NotaEscPos, mm = 40): string {
   totalLine('Member', esc(n.member) || '-')
   if (n.deskripsi) totalLine('Deskripsi', esc(n.deskripsi))
   if (n.paket) totalLine('Paket', esc(n.paket))
+  if (n.mulai) totalLine('Mulai', esc(n.mulai))
+  if (n.berakhir) totalLine('Berakhir', esc(n.berakhir))
   totalLine('Metode', esc(n.metode))
   if (n.status) totalLine('Status', esc(n.status))
   line(divider)
