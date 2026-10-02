@@ -153,9 +153,10 @@ export async function POST(req: NextRequest) {
             data: { tenantId, memberId: body.memberId, method: 'day_pass' },
           })
         }
-      } else if (body.guestName) {
+      } else {
+        // Guest tanpa nama pun masuk absensi — label generik "Guest".
         await tx.attendance.create({
-          data: { tenantId, guestName: body.guestName, method: 'day_pass' },
+          data: { tenantId, guestName: body.guestName || 'Guest', method: 'day_pass' },
         })
       }
     }
