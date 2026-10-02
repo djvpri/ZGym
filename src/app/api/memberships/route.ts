@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic"
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireTenant } from '@/lib/tenant'
+import { hitungEndDate } from '@/lib/masaAktif'
 
 export async function POST(req: NextRequest) {
   const tenantId = await requireTenant()
@@ -23,8 +24,9 @@ export async function POST(req: NextRequest) {
   })
 
   const startDate = existingActive && existingActive.endDate > now ? existingActive.endDate : now
-  const endDate = new Date(startDate)
-  endDate.setDate(endDate.getDate() + plan.duration)
+  // Rumus dipusatkan di src/lib/masaAktif.ts — sebelumnya di sini dan kelebihan
+  // satu hari (1 Sep + 30 hari jadi 1 Okt, harusnya 30 Sep).
+  const endDate = hitungEndDate(startDate, plan.duration)
 
   // Update member expiry
   await prisma.member.update({

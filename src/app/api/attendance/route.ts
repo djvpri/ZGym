@@ -3,6 +3,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireTenant } from '@/lib/tenant'
 import { kasirModulGuard } from '@/lib/kasirPerm'
+import { computeStatus } from '@/lib/memberStatus'
+import { rentangHariIniWib } from '@/lib/masaAktif'
 
 const HOUR = 3_600_000
 /** Ambil ambang 1000 baris: hari ramai gym tak terpotong (pola /api/payments). */
@@ -109,13 +111,34 @@ export async function POST(req: NextRequest) {
   const body = await req.json()
 
   if (body.action === 'checkin') {
+    // Gerbang masa aktif: member non-aktif / kedaluwarsa DITOLAK.
+    // Tanpa ini "tidak bisa masuk lagi" cuma label di halaman Members —
+    // check-in tetap dibuat untuk siapa pun (termasuk yg habis setahun lalu).
+    const member = await prisma.member.findFirst({
+      where: { id: body.memberId, tenantId },
+      select: { id: true, name: true, status: true, expiryDate: true },
+    })
+    if (!member) return NextResponse.json({ error: 'Member tidak ditemukan' }, { status: 404 })
+
+    const statusDinamis = computeStatus(member)
+    if (statusDinamis !== 'active') {
+      const sebab = member.expiryDate && member.expiryDate <= new Date()
+        ? `Masa aktif habis ${member.expiryDate.toISOString().slice(0, 10)}`
+        : 'Membership belum aktif'
+      return NextResponse.json(
+        { error: `${member.name} tidak bisa check-in. ${sebab}.`, status: statusDinamis },
+        { status: 403 },
+      )
+    }
+
+    // Rentang hari ini zona WIB (bukan setHours yg memakai UTC server →
+    // hari baru keliru dianggap mulai 07:00 WIB, check-in kedua jadi lolos).
+    const hariIni = rentangHariIniWib()
     const existing = await prisma.attendance.findFirst({
       where: {
         tenantId,
         memberId: body.memberId,
-        checkIn: {
-          gte: new Date(new Date().setHours(0, 0, 0, 0)),
-        },
+        checkIn: { gte: hariIni.gte, lte: hariIni.lte },
         checkOut: null,
       },
     })

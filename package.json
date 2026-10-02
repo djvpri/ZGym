@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "prisma generate && next build --no-lint",
     "start": "prisma db push --skip-generate && next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "cek:masa-aktif": "node --experimental-strip-types scripts/cek-masa-aktif.mts"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",

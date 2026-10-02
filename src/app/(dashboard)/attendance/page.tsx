@@ -93,7 +93,10 @@ export default function AttendancePage() {
       const a = await res.json()
       setAttendances([a, ...attendances])
     } else {
-      alert('Sudah check-in hari ini')
+      // Tampilkan pesan dari server apa adanya — 400 (sudah check-in) dan
+      // 403 (masa aktif habis) butuh penjelasan berbeda untuk kasir.
+      const { error } = await res.json().catch(() => ({ error: '' }))
+      alert(error || 'Check-in gagal')
     }
   }
 
