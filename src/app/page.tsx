@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import ArtikelSection from './ArtikelSection'
 
 const features = [
   {
@@ -304,6 +305,9 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
+
+      {/* Artikel terbaru */}
+      <ArtikelSection />
 
       {/* CTA */}
       <section className="py-20 bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
